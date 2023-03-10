@@ -62,6 +62,7 @@ workflow deepvariant {
 	output {
 		IndexData vcf = {"data": deepvariant_postprocess_variants.vcf, "data_index": deepvariant_postprocess_variants.vcf_index}
 		IndexData gvcf = {"data": deepvariant_postprocess_variants.gvcf, "data_index": deepvariant_postprocess_variants.gvcf_index}
+		File report = deepvariant_postprocess_variants.report
 	}
 
 	parameter_meta {
