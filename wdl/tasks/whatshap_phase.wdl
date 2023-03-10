@@ -26,7 +26,7 @@ task whatshap_phase {
 		whatshap phase \
 			--indels \
 			--reference ~{reference} \
-			~{"--chromosome" + chromosome} \
+			~{"--chromosome " + chromosome} \
 			--output ~{vcf_basename}.phased.vcf.gz \
 			~{vcf} \
 			~{sep=' ' aligned_bams}

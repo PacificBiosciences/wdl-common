@@ -13,6 +13,8 @@ task whatshap_haplotag {
 		File reference
 		File reference_index
 
+		String? params
+
 		RuntimeAttributes runtime_attributes
 	}
 
@@ -24,16 +26,22 @@ task whatshap_haplotag {
 		set -euo pipefail
 
 		whatshap haplotag \
+			~{params} \
 			--tag-supplementary \
 			--output-threads ~{threads} \
 			--reference ~{reference} \
 			--output ~{bam_basename}.haplotagged.bam \
 			~{phased_vcf} \
 			~{aligned_bam}
+
+		samtools index \
+			-@ ~{threads} \
+			~{bam_basename}.haplotagged.bam
 	>>>
 
 	output {
 		File haplotagged_bam = "~{bam_basename}.haplotagged.bam"
+		File haplotagged_bam_index = "~{bam_basename}.haplotagged.bam.bai"
 	}
 
 	runtime {
