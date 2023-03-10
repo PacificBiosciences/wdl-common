@@ -13,9 +13,9 @@ workflow backend_configuration {
 	}
 
 	# TODO define public container registries in each cloud
-	String gcp_container_registry = "us-central1-docker.pkg.dev/cool-benefit-817/workflow-images"
+	String gcp_container_registry = ""
 	String azure_container_registry = "pacbio.azurecr.io"
-	String aws_container_registry = "635186400088.dkr.ecr.us-east-2.amazonaws.com"
+	String aws_container_registry = ""
 
 	if (backend == "GCP") {
 		# zones must be defined
