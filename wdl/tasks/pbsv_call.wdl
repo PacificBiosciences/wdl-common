@@ -23,6 +23,7 @@ task pbsv_call {
 		pbsv call \
 			--hifi \
 			--min-sv-length 20 \
+			--log-level INFO \
 			--num-threads ~{threads} \
 			~{reference} \
 			~{sep=' ' svsigs} \
