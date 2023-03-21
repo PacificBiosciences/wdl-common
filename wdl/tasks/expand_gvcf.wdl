@@ -10,6 +10,7 @@ task expand_gvcf {
 		File reference
 
 		File expansion_targets
+		File expansion_targets_index
 
 		RuntimeAttributes runtime_attributes
 	}
