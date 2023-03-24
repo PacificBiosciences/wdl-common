@@ -1,5 +1,7 @@
 version 1.0
 
+# Zip and index a VCF file
+
 import "../structs.wdl"
 
 task zip_index_vcf {

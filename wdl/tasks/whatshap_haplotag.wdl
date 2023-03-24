@@ -1,5 +1,7 @@
 version 1.0
 
+# Haplotag an aligned BAM file using a phased VCF with WhatsHap
+
 import "../structs.wdl"
 
 task whatshap_haplotag {

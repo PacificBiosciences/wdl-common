@@ -1,5 +1,7 @@
 version 1.0
 
+# Run joint calling using GLnexus
+
 import "../structs.wdl"
 
 task glnexus {

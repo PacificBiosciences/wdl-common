@@ -1,5 +1,7 @@
 version 1.0
 
+# Phase and calculate stats for a VCF using WhatsHap.
+
 import "../../structs.wdl"
 import "../../tasks/whatshap_phase.wdl" as WhatshapPhase
 import "../../tasks/whatshap_stats.wdl" as WhatshapStats

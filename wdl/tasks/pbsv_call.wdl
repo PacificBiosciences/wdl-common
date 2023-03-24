@@ -1,5 +1,7 @@
 version 1.0
 
+# Call SVs using pbsv
+
 import "../structs.wdl"
 
 task pbsv_call {

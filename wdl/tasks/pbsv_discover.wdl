@@ -1,5 +1,7 @@
 version 1.0
 
+# Generate svsigs to be used in SV calling using pbsv
+
 import "../structs.wdl"
 
 task pbsv_discover {

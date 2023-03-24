@@ -1,5 +1,7 @@
 version 1.0
 
+# Phase a VCF using WhatsHap
+
 import "../structs.wdl"
 
 task whatshap_phase {

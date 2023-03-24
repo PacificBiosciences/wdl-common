@@ -1,5 +1,7 @@
 version 1.0
 
+# Calculate VCF stats
+
 import "../structs.wdl"
 
 task bcftools_stats {

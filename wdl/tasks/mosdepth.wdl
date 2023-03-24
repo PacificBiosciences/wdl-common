@@ -1,5 +1,7 @@
 version 1.0
 
+# Calculate summary stats using mosdepth
+
 import "../structs.wdl"
 
 task mosdepth {

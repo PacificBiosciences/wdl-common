@@ -1,5 +1,7 @@
 version 1.0
 
+# Calculate stats from a phased VCF using WhatsHap
+
 import "../structs.wdl"
 
 task whatshap_stats {

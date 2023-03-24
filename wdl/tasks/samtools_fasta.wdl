@@ -1,5 +1,7 @@
 version 1.0
 
+# Convert a BAM to a FASTA file using samtools
+
 import "../structs.wdl"
 
 task samtools_fasta {

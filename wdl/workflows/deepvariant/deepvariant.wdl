@@ -1,5 +1,7 @@
 version 1.0
 
+# Call variants using DeepVariant
+
 import "../../structs.wdl"
 
 workflow deepvariant {
