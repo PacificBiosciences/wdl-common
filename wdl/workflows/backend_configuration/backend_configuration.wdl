@@ -12,10 +12,10 @@ workflow backend_configuration {
 		String? aws_on_demand_queue_arn
 	}
 
-	# TODO define public container registries in each cloud
+	# TODO define GCP registry
 	String gcp_container_registry = ""
 	String azure_container_registry = "pacbio.azurecr.io"
-	String aws_container_registry = ""
+	String aws_container_registry = "298935932562.dkr.ecr.us-west-2.amazonaws.com"
 
 	if (backend == "GCP") {
 		# zones must be defined
