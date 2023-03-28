@@ -33,7 +33,7 @@ task pbsv_discover {
 	}
 
 	runtime {
-		docker: "~{runtime_attributes.container_registry}/pbsv:2.8.0"
+		docker: "~{runtime_attributes.container_registry}/pbsv:2.9.0"
 		cpu: 2
 		memory: "4 GB"
 		disk: disk_size + " GB"
