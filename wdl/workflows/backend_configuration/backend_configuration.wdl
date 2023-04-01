@@ -10,9 +10,12 @@ workflow backend_configuration {
 		String? zones
 		String? aws_spot_queue_arn
 		String? aws_on_demand_queue_arn
+		String? slurm_partition_default
+		String? slurm_partition_gpu
 	}
 
-	# TODO define GCP registry
+	# TODO define GCP registry and default (or slurm) registry
+	String container_registry = ""
 	String gcp_container_registry = ""
 	String azure_container_registry = "pacbio.azurecr.io"
 	String aws_container_registry = "298935932562.dkr.ecr.us-west-2.amazonaws.com"
@@ -28,7 +31,9 @@ workflow backend_configuration {
 			"max_retries": 0,
 			"zones": select_first([zones]),
 			"queue_arn": "",
-			"container_registry": gcp_container_registry
+			"container_registry": gcp_container_registry,
+			"slurm_partition_default": "",
+			"slurm_partition_default_gpu": ""
 		}
 
 		RuntimeAttributes gcp_on_demand_runtime_attributes = {
@@ -36,7 +41,9 @@ workflow backend_configuration {
 			"max_retries": 0,
 			"zones": select_first([zones]),
 			"queue_arn": "",
-			"container_registry": gcp_container_registry
+			"container_registry": gcp_container_registry,
+			"slurm_partition_default": "",
+			"slurm_partition_default_gpu": ""
 		}
 	}
 
@@ -50,7 +57,9 @@ workflow backend_configuration {
 			"max_retries": 3,
 			"zones": "",
 			"queue_arn": "",
-			"container_registry": azure_container_registry
+			"container_registry": azure_container_registry,
+			"slurm_partition_default": "",
+			"slurm_partition_default_gpu": ""
 		}
 
 		RuntimeAttributes azure_on_demand_runtime_attributes = {
@@ -58,7 +67,9 @@ workflow backend_configuration {
 			"max_retries": 0,
 			"zones": "",
 			"queue_arn": "",
-			"container_registry": azure_container_registry
+			"container_registry": azure_container_registry,
+			"slurm_partition_default": "",
+			"slurm_partition_default_gpu": ""
 		}
 	}
 
@@ -76,7 +87,9 @@ workflow backend_configuration {
 			"max_retries": 3,
 			"zones": select_first([zones]),
 			"queue_arn": select_first([aws_spot_queue_arn, ""]),
-			"container_registry": aws_container_registry
+			"container_registry": aws_container_registry,
+			"slurm_partition_default": "",
+			"slurm_partition_default_gpu": ""
 		}
 
 		RuntimeAttributes aws_on_demand_runtime_attributes = {
@@ -84,7 +97,32 @@ workflow backend_configuration {
 			"max_retries": 0,
 			"zones": select_first([zones]),
 			"queue_arn": select_first([aws_on_demand_queue_arn, ""]),
-			"container_registry": aws_container_registry
+			"container_registry": aws_container_registry,
+			"slurm_partition_default": "",
+			"slurm_partition_default_gpu": ""
+		}
+
+	if (backend == "slurm") {
+		# slurm_partition_default must be defined
+		# if slurm_partition_gpu is defined, it will be used for GPU tasks
+		RuntimeAttributes slurm_runtime_attributes = {
+			"preemptible_tries": 0,
+			"max_retries": 2,
+			"zones": "",
+			"queue_arn": "",
+			"container_registry": container_registry,
+			"slurm_partition_default": select_first([slurm_partition_default]),
+			"slurm_partition_gpu": select_first([slurm_partition_gpu, ""])
+		}
+
+		RuntimeAttributes slurm_on_demand_runtime_attributes = {
+			"preemptible_tries": 0,
+			"max_retries": 2,
+			"zones": "",
+			"queue_arn": "",
+			"container_registry": container_registry,
+			"slurm_partition_default": select_first([slurm_partition_default]),
+			"slurm_partition_gpu": select_first([slurm_partition_gpu, ""])
 		}
 	}
 
@@ -92,19 +130,23 @@ workflow backend_configuration {
 		RuntimeAttributes spot_runtime_attributes = select_first([
 			gcp_spot_runtime_attributes,
 			azure_spot_runtime_attributes,
-			aws_spot_runtime_attributes
+			aws_spot_runtime_attributes,
+			slurm_runtime_attributes
 		])
 		RuntimeAttributes on_demand_runtime_attributes = select_first([
 			gcp_on_demand_runtime_attributes,
 			azure_on_demand_runtime_attributes,
-			aws_on_demand_runtime_attributes
+			aws_on_demand_runtime_attributes,
+			slurm_runtime_attributes
 		])
 	}
 
 	parameter_meta {
-		backend: {help: "Backend where the workflow will be executed ['GCP', 'Azure', 'AWS']"}
+		backend: {help: "Backend where the workflow will be executed ['GCP', 'Azure', 'AWS', 'slurm']"}
 		zones: {help: "Zones where compute will take place; required if backend is set to 'AWS' or 'GCP'"}
 		aws_spot_queue_arn: {help: "Queue ARN for the spot batch queue; required if backend is set to 'AWS'"}
 		aws_on_demand_queue_arn: {help: "Queue ARN for the on demand batch queue; required if backend is set to 'AWS'"}
+		slurm_partition_default: {help: "Default slurm partition; required if backend is set to 'slurm'"}
+		slurm_partition_gpu: {help: "GPU slurm partition; optional if backend is set to 'slurm'"}
 	}
 }

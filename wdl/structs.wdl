@@ -19,4 +19,7 @@ struct RuntimeAttributes {
 	String zones
 	String queue_arn
 	String container_registry
+	
+	String slurm_partition_default
+	String slurm_partition_gpu
 }
