@@ -16,9 +16,25 @@ workflow deepvariant {
 		DeepVariantModel? deepvariant_model
 
 		RuntimeAttributes default_runtime_attributes
+		String backend
 	}
 
 	Int deepvariant_threads = 64
+
+	# by default, use cpu for deepvariant call_variants
+	if ((backend == "slurm") && (default_runtime_attributes.slurm_partition_gpu == "")) {
+		String call_variants_docker = "gcr.io/deepvariant-docker/deepvariant:~{deepvariant_version}"
+		Boolean call_variants_gpu = false
+		Int call_variants_threads = deepvariant_threads
+		String call_variants_partition = default_runtime_attributes.slurm_partition_default
+	}
+	# if gpu partition is available, use gpu for deepvariant call_variants
+	if ((backend == "slurm") && (default_runtime_attributes.slurm_partition_gpu != "")) {
+		String call_variants_docker = "gcr.io/deepvariant-docker/deepvariant:~{deepvariant_version}-gpu"
+		Boolean call_variants_gpu = true
+		Int call_variants_threads = 8
+		String call_variants_partition = default_runtime_attributes.slurm_partition_gpu
+	}
 
 	scatter (bam_object in aligned_bams) {
 		File aligned_bam = bam_object.data
@@ -74,6 +90,7 @@ workflow deepvariant {
 		deepvariant_version: {help: "Version of deepvariant to use"}
 		deepvariant_model: {help: "Optional deepvariant model file to use"}
 		default_runtime_attributes: {help: "Default RuntimeAttributes; spot if preemptible was set to true, otherwise on_demand"}
+		backend: {help: "Backend where the workflow will be executed ['GCP', 'Azure', 'AWS', 'slurm']"}
 	}
 }
 
@@ -138,6 +155,7 @@ task deepvariant_make_examples {
 		maxRetries: runtime_attributes.max_retries
 		awsBatchRetryAttempts: runtime_attributes.max_retries
 		queueArn: runtime_attributes.queue_arn
+		slurm_partition: runtime_attributes.slurm_partition_default
 		zones: runtime_attributes.zones
 	}
 }
@@ -150,9 +168,12 @@ task deepvariant_call_variants {
 
 		DeepVariantModel? deepvariant_model
 		Int deepvariant_threads
-		String deepvariant_version
+		Int call_variants_threads
 
 		RuntimeAttributes runtime_attributes
+		String call_variants_docker
+		String call_variants_partition
+		Boolean call_variants_gpu
 	}
 
 	String deepvariant_model_path = if (defined(deepvariant_model)) then sub(select_first([deepvariant_model]).model.data, "\\.data.*", "") else "/opt/models/pacbio/model.ckpt"
@@ -176,8 +197,9 @@ task deepvariant_call_variants {
 	}
 
 	runtime {
-		docker: "gcr.io/deepvariant-docker/deepvariant:~{deepvariant_version}"
-		cpu: deepvariant_threads
+		docker: call_variants_docker
+		cpu: call_variants_threads
+		gpu: call_variants_gpu
 		memory: "8 GB"
 		disk: disk_size + " GB"
 		disks: "local-disk " + disk_size + " HDD"
@@ -185,6 +207,7 @@ task deepvariant_call_variants {
 		maxRetries: runtime_attributes.max_retries
 		awsBatchRetryAttempts: runtime_attributes.max_retries
 		queueArn: runtime_attributes.queue_arn
+		slurm_partition = call_variants_partition
 		zones: runtime_attributes.zones
 	}
 }
@@ -239,6 +262,7 @@ task deepvariant_postprocess_variants {
 		maxRetries: runtime_attributes.max_retries
 		awsBatchRetryAttempts: runtime_attributes.max_retries
 		queueArn: runtime_attributes.queue_arn
+		slurm_partition: runtime_attributes.slurm_partition_default
 		zones: runtime_attributes.zones
 	}
 }
