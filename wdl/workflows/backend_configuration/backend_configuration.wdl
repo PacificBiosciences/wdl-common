@@ -12,10 +12,7 @@ workflow backend_configuration {
 		String? aws_on_demand_queue_arn
 	}
 
-	# TODO define GCP registry
-	String gcp_container_registry = ""
-	String azure_container_registry = "pacbio.azurecr.io"
-	String aws_container_registry = "298935932562.dkr.ecr.us-west-2.amazonaws.com"
+	String container_registry = "quay.io/pacbio"
 
 	if (backend == "GCP") {
 		# zones must be defined
@@ -28,7 +25,7 @@ workflow backend_configuration {
 			"max_retries": 0,
 			"zones": select_first([zones]),
 			"queue_arn": "",
-			"container_registry": gcp_container_registry
+			"container_registry": container_registry
 		}
 
 		RuntimeAttributes gcp_on_demand_runtime_attributes = {
@@ -36,7 +33,7 @@ workflow backend_configuration {
 			"max_retries": 0,
 			"zones": select_first([zones]),
 			"queue_arn": "",
-			"container_registry": gcp_container_registry
+			"container_registry": container_registry
 		}
 	}
 
@@ -50,7 +47,7 @@ workflow backend_configuration {
 			"max_retries": 3,
 			"zones": "",
 			"queue_arn": "",
-			"container_registry": azure_container_registry
+			"container_registry": container_registry
 		}
 
 		RuntimeAttributes azure_on_demand_runtime_attributes = {
@@ -58,7 +55,7 @@ workflow backend_configuration {
 			"max_retries": 0,
 			"zones": "",
 			"queue_arn": "",
-			"container_registry": azure_container_registry
+			"container_registry": container_registry
 		}
 	}
 
@@ -76,7 +73,7 @@ workflow backend_configuration {
 			"max_retries": 3,
 			"zones": select_first([zones]),
 			"queue_arn": select_first([aws_spot_queue_arn, ""]),
-			"container_registry": aws_container_registry
+			"container_registry": container_registry
 		}
 
 		RuntimeAttributes aws_on_demand_runtime_attributes = {
@@ -84,7 +81,7 @@ workflow backend_configuration {
 			"max_retries": 0,
 			"zones": select_first([zones]),
 			"queue_arn": select_first([aws_on_demand_queue_arn, ""]),
-			"container_registry": aws_container_registry
+			"container_registry": container_registry
 		}
 	}
 
