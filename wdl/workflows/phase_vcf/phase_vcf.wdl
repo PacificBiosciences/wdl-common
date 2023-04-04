@@ -92,6 +92,7 @@ task split_vcf {
 	}
 
 	String vcf_basename = basename(vcf, ".vcf.gz")
+	String region_substituted = sub(region, ":", "_")
 	Int disk_size = ceil(size(vcf, "GB") * 2 + 20)
 
 	command <<<
@@ -101,15 +102,15 @@ task split_vcf {
 			-h \
 			~{vcf} \
 			~{region} \
-		> ~{vcf_basename}.~{region}.vcf
+		> ~{vcf_basename}.~{region_substituted}.vcf
 
-		bgzip ~{vcf_basename}.~{region}.vcf
-		tabix ~{vcf_basename}.~{region}.vcf.gz
+		bgzip ~{vcf_basename}.~{region_substituted}.vcf
+		tabix ~{vcf_basename}.~{region_substituted}.vcf.gz
 	>>>
 
 	output {
-		File region_vcf = "~{vcf_basename}.~{region}.vcf.gz"
-		File region_vcf_index = "~{vcf_basename}.~{region}.vcf.gz.tbi"
+		File region_vcf = "~{vcf_basename}.~{region_substituted}.vcf.gz"
+		File region_vcf_index = "~{vcf_basename}.~{region_substituted}.vcf.gz.tbi"
 	}
 
 	runtime {
