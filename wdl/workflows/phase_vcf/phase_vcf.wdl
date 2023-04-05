@@ -114,7 +114,7 @@ task split_vcf {
 	}
 
 	runtime {
-		docker: "~{runtime_attributes.container_registry}/htslib:1.14"
+		docker: "~{runtime_attributes.container_registry}/htslib:1.14@sha256:24ae834b9d4ba3ea3c23d77b2ce49b3a56a6e32d1367470e8e1160eb645019a9"
 		cpu: 1
 		memory: "1 GB"
 		disk: disk_size + " GB"
@@ -156,7 +156,7 @@ task bcftools_concat {
 	}
 
 	runtime {
-		docker: "~{runtime_attributes.container_registry}/bcftools:1.14"
+		docker: "~{runtime_attributes.container_registry}/bcftools:1.14@sha256:36d91d5710397b6d836ff87dd2a924cd02fdf2ea73607f303a8544fbac2e691f"
 		cpu: 1
 		memory: "1 GB"
 		disk: disk_size + " GB"
