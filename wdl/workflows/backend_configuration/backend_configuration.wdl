@@ -10,9 +10,8 @@ workflow backend_configuration {
 		String? zones
 		String? aws_spot_queue_arn
 		String? aws_on_demand_queue_arn
+		String container_registry = "quay.io/pacbio"
 	}
-
-	String container_registry = "quay.io/pacbio"
 
 	RuntimeAttributes default_runtime_attributes = {
 		"preemptible_tries": 0,
