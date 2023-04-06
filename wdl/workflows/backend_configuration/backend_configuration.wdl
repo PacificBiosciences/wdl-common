@@ -10,9 +10,8 @@ workflow backend_configuration {
 		String? zones
 		String? aws_spot_queue_arn
 		String? aws_on_demand_queue_arn
+		String container_registry = "quay.io/pacbio"
 	}
-
-	String container_registry = "quay.io/pacbio"
 
 	if (backend == "GCP") {
 		# zones must be defined
@@ -85,21 +84,34 @@ workflow backend_configuration {
 		}
 	}
 
+	if (backend == "HPC") {
+		# No distinction between preemptible and on-demand in HPC configuration
+		RuntimeAttributes hpc_runtime_attributes = {
+			"preemptible_tries": 0,
+			"max_retries": 0,
+			"zones": "",
+			"queue_arn": "",
+			"container_registry": container_registry
+		}
+	}
+
 	output {
 		RuntimeAttributes spot_runtime_attributes = select_first([
 			gcp_spot_runtime_attributes,
 			azure_spot_runtime_attributes,
-			aws_spot_runtime_attributes
+			aws_spot_runtime_attributes,
+			hpc_runtime_attributes
 		])
 		RuntimeAttributes on_demand_runtime_attributes = select_first([
 			gcp_on_demand_runtime_attributes,
 			azure_on_demand_runtime_attributes,
-			aws_on_demand_runtime_attributes
+			aws_on_demand_runtime_attributes,
+			hpc_runtime_attributes
 		])
 	}
 
 	parameter_meta {
-		backend: {help: "Backend where the workflow will be executed ['GCP', 'Azure', 'AWS']"}
+		backend: {help: "Backend where the workflow will be executed ['GCP', 'Azure', 'AWS', 'HPC']"}
 		zones: {help: "Zones where compute will take place; required if backend is set to 'AWS' or 'GCP'"}
 		aws_spot_queue_arn: {help: "Queue ARN for the spot batch queue; required if backend is set to 'AWS'"}
 		aws_on_demand_queue_arn: {help: "Queue ARN for the on demand batch queue; required if backend is set to 'AWS'"}
