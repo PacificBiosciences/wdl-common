@@ -14,6 +14,14 @@ workflow backend_configuration {
 
 	String container_registry = "quay.io/pacbio"
 
+	RuntimeAttributes default_runtime_attributes = {
+		"preemptible_tries": 0,
+		"max_retries": 0,
+		"zones": "",
+		"queue_arn": "",
+		"container_registry": container_registry
+	}
+
 	if (backend == "GCP") {
 		# zones must be defined
 
@@ -89,12 +97,14 @@ workflow backend_configuration {
 		RuntimeAttributes spot_runtime_attributes = select_first([
 			gcp_spot_runtime_attributes,
 			azure_spot_runtime_attributes,
-			aws_spot_runtime_attributes
+			aws_spot_runtime_attributes,
+			default_runtime_attributes
 		])
 		RuntimeAttributes on_demand_runtime_attributes = select_first([
 			gcp_on_demand_runtime_attributes,
 			azure_on_demand_runtime_attributes,
-			aws_on_demand_runtime_attributes
+			aws_on_demand_runtime_attributes,
+			default_runtime_attributes
 		])
 	}
 
