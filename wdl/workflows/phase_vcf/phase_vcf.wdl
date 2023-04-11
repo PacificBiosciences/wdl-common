@@ -25,34 +25,53 @@ workflow phase_vcf {
 		File aligned_bam_index = bam_object.data_index
 	}
 
-	scatter (region in regions) {
-		call split_vcf {
-			input:
-				vcf = vcf.data,
-				vcf_index = vcf.data_index,
-				region = region,
-				runtime_attributes = default_runtime_attributes
+	Float num_shards_per_chunk = 50.0
+	Int num_chunks = ceil(length(regions) / num_shards_per_chunk)
+	scatter (chunk_shard_index in range(num_chunks)) {
+		Int num_shards_in_chunk = if (chunk_shard_index == (length(range(num_chunks)) - 1)) then (length(regions) % ceil(num_shards_per_chunk)) else ceil(num_shards_per_chunk)
+
+		scatter (region_shard_index in range(num_shards_in_chunk)) {
+			Int region_index = ceil(chunk_shard_index * num_shards_per_chunk) + region_shard_index
+			String region = regions[region_index]
+
+			call split_vcf {
+				input:
+					vcf = vcf.data,
+					vcf_index = vcf.data_index,
+					region = region,
+					runtime_attributes = default_runtime_attributes
+			}
+
+			String chromosome = sub(region, ":.*", "")
+
+			call WhatshapPhase.whatshap_phase {
+				input:
+					vcf = split_vcf.region_vcf,
+					vcf_index = split_vcf.region_vcf_index,
+					chromosome = chromosome,
+					aligned_bams = aligned_bam,
+					aligned_bam_indices = aligned_bam_index,
+					reference = reference_fasta.data,
+					reference_index = reference_fasta.data_index,
+					runtime_attributes = default_runtime_attributes
+			}
 		}
 
-		String chromosome = sub(region, ":.*", "")
-
-		call WhatshapPhase.whatshap_phase {
+		# Concatenate smaller groups of VCFs before doing the main concatenation to avoid argument list too long
+		# when there are a very large number of regions
+		call bcftools_concat as bcftools_concat_chunk {
 			input:
-				vcf = split_vcf.region_vcf,
-				vcf_index = split_vcf.region_vcf_index,
-				chromosome = chromosome,
-				aligned_bams = aligned_bam,
-				aligned_bam_indices = aligned_bam_index,
-				reference = reference_fasta.data,
-				reference_index = reference_fasta.data_index,
+				vcfs = whatshap_phase.phased_vcf,
+				vcf_indices = whatshap_phase.phased_vcf_index,
+				output_vcf_name = "~{vcf_basename}.phased.~{chunk_shard_index}.vcf.gz",
 				runtime_attributes = default_runtime_attributes
 		}
 	}
 
 	call bcftools_concat {
 		input:
-			vcfs = whatshap_phase.phased_vcf,
-			vcf_indices = whatshap_phase.phased_vcf_index,
+			vcfs = bcftools_concat_chunk.concatenated_vcf,
+			vcf_indices = bcftools_concat_chunk.concatenated_vcf_index,
 			output_vcf_name = "~{vcf_basename}.phased.vcf.gz",
 			runtime_attributes = default_runtime_attributes
 	}
