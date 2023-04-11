@@ -161,6 +161,7 @@ task bcftools_concat {
 		set -euo pipefail
 
 		bcftools concat \
+			--no-version \
 			--file-list ~{write_lines(vcfs)} \
 			--allow-overlaps \
 			--output ~{output_vcf_name} \
