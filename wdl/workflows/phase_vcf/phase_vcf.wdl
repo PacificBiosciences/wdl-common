@@ -93,6 +93,7 @@ task split_vcf {
 
 	String vcf_basename = basename(vcf, ".vcf.gz")
 	String region_substituted = sub(region, ":", "_")
+	Int threads = 2
 	Int disk_size = ceil(size(vcf, "GB") * 2 + 20)
 
 	command <<<
@@ -104,7 +105,7 @@ task split_vcf {
 			~{region} \
 		> ~{vcf_basename}.~{region_substituted}.vcf
 
-		bgzip ~{vcf_basename}.~{region_substituted}.vcf
+		bgzip -@{threads} ~{vcf_basename}.~{region_substituted}.vcf
 		tabix ~{vcf_basename}.~{region_substituted}.vcf.gz
 	>>>
 
@@ -115,8 +116,8 @@ task split_vcf {
 
 	runtime {
 		docker: "~{runtime_attributes.container_registry}/htslib@sha256:24ae834b9d4ba3ea3c23d77b2ce49b3a56a6e32d1367470e8e1160eb645019a9"
-		cpu: 1
-		memory: "1 GB"
+		cpu: threads
+		memory: "4 GB"
 		disk: disk_size + " GB"
 		disks: "local-disk " + disk_size + " HDD"
 		preemptible: runtime_attributes.preemptible_tries
@@ -142,6 +143,7 @@ task bcftools_concat {
 		set -euo pipefail
 
 		bcftools concat \
+			--threads ~{threads - 1} \
 			--allow-overlaps \
 			--output ~{output_vcf_name} \
 			--output-type z \
@@ -157,8 +159,8 @@ task bcftools_concat {
 
 	runtime {
 		docker: "~{runtime_attributes.container_registry}/bcftools@sha256:36d91d5710397b6d836ff87dd2a924cd02fdf2ea73607f303a8544fbac2e691f"
-		cpu: 1
-		memory: "1 GB"
+		cpu: 2
+		memory: "4 GB"
 		disk: disk_size + " GB"
 		disks: "local-disk " + disk_size + " HDD"
 		preemptible: runtime_attributes.preemptible_tries
