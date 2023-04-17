@@ -155,13 +155,13 @@ task deepvariant_call_variants {
 		RuntimeAttributes runtime_attributes
 	}
 
-	String deepvariant_model_path = if (defined(deepvariant_model)) then sub(select_first([deepvariant_model]).model.data, "\\.data.*", "") else "/opt/models/pacbio/model.ckpt"
-
 	Int mem_gb = deepvariant_threads * 4
 	Int disk_size = ceil(size(example_tfrecords[0], "GB") * length(example_tfrecords) * 2 + 100)
 
 	command <<<
 		set -euo pipefail
+
+		deepvariant_model_path=~{if (defined(deepvariant_model)) then sub(select_first([deepvariant_model]).model.data, "\\.data.*", "") else "/opt/models/pacbio/model.ckpt"}
 
 		# extract the path where the first example_tfrecord is located; all example_tfrecords will be located at the same base path
 		example_tfrecord_dir=$(dirname ~{example_tfrecords[0]})
@@ -169,7 +169,7 @@ task deepvariant_call_variants {
 		/opt/deepvariant/bin/call_variants \
 			--outfile ~{sample_id}.~{reference_name}.call_variants_output.tfrecord.gz \
 			--examples "$example_tfrecord_dir/~{sample_id}.examples.tfrecord@~{deepvariant_threads}.gz" \
-			--checkpoint ~{deepvariant_model_path}
+			--checkpoint "${deepvariant_model_path}"
 	>>>
 
 	output {
@@ -232,7 +232,7 @@ task deepvariant_postprocess_variants {
 
 	runtime {
 		docker: "gcr.io/deepvariant-docker/deepvariant:~{deepvariant_version}"
-		cpu: 1
+		cpu: 2
 		memory: "32 GB"
 		disk: disk_size + " GB"
 		disks: "local-disk " + disk_size + " HDD"

@@ -145,10 +145,11 @@ task bcftools_concat {
 
 		bcftools concat \
 			--threads ~{threads - 1} \
+			--no-version \
+			--file-list ~{write_lines(vcfs)} \
 			--allow-overlaps \
 			--output ~{output_vcf_name} \
-			--output-type z \
-			~{sep=' ' vcfs}
+			--output-type z
 
 		tabix "~{output_vcf_name}"
 	>>>
