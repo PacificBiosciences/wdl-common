@@ -155,6 +155,7 @@ task deepvariant_call_variants {
 		RuntimeAttributes runtime_attributes
 	}
 
+	Int mem_gb = deepvariant_threads * 4
 	Int disk_size = ceil(size(example_tfrecords[0], "GB") * length(example_tfrecords) * 2 + 100)
 
 	command <<<
@@ -178,7 +179,7 @@ task deepvariant_call_variants {
 	runtime {
 		docker: "gcr.io/deepvariant-docker/deepvariant:~{deepvariant_version}"
 		cpu: deepvariant_threads
-		memory: "8 GB"
+		memory: mem_gb + " GB"
 		disk: disk_size + " GB"
 		disks: "local-disk " + disk_size + " HDD"
 		preemptible: runtime_attributes.preemptible_tries

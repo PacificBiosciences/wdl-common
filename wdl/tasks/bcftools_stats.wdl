@@ -24,7 +24,7 @@ task bcftools_stats {
 		set -euo pipefail
 
 		bcftools stats \
-			--threads ~{threads} \
+			--threads ~{threads - 1} \
 			~{params} \
 			~{"--fasta-ref " + reference} \
 			~{vcf} \

@@ -37,7 +37,7 @@ task whatshap_haplotag {
 			~{aligned_bam}
 
 		samtools index \
-			-@ ~{threads} \
+			-@ ~{threads - 1} \
 			~{bam_basename}.haplotagged.bam
 	>>>
 

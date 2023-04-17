@@ -20,7 +20,7 @@ task mosdepth {
 		set -euo pipefail
 
 		mosdepth \
-			--threads ~{threads} \
+			--threads ~{threads - 1} \
 			--by 500 \
 			--no-per-base \
 			--use-median \
