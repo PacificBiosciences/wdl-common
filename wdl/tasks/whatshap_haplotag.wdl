@@ -16,11 +16,12 @@ task whatshap_haplotag {
 		File reference_index
 
 		String? params
+		String? output_bam_name
 
 		RuntimeAttributes runtime_attributes
 	}
 
-	String bam_basename = basename(aligned_bam, ".bam")
+	String output_bam = select_first([output_bam_name, "~{basename(aligned_bam, '.bam')}.haplotagged.bam"])
 	Int threads = 4
 	Int disk_size = ceil((size(phased_vcf, "GB") + size(aligned_bam, "GB") + size(reference, "GB")) * 2 + 20)
 
@@ -32,18 +33,18 @@ task whatshap_haplotag {
 			--tag-supplementary \
 			--output-threads ~{threads} \
 			--reference ~{reference} \
-			--output ~{bam_basename}.haplotagged.bam \
+			--output ~{output_bam} \
 			~{phased_vcf} \
 			~{aligned_bam}
 
 		samtools index \
 			-@ ~{threads - 1} \
-			~{bam_basename}.haplotagged.bam
+			~{output_bam}
 	>>>
 
 	output {
-		File haplotagged_bam = "~{bam_basename}.haplotagged.bam"
-		File haplotagged_bam_index = "~{bam_basename}.haplotagged.bam.bai"
+		File haplotagged_bam = "~{output_bam}"
+		File haplotagged_bam_index = "~{output_bam}.bai"
 	}
 
 	runtime {
