@@ -35,7 +35,7 @@ task pbsv_discover {
 	runtime {
 		docker: "~{runtime_attributes.container_registry}/pbsv@sha256:798ca327f653c4e666b9f7c6a09260a762eea4e7e6864f490a87ed4106a53b98"
 		cpu: 2
-		memory: "4 GB"
+		memory: "8 GB"
 		disk: disk_size + " GB"
 		disks: "local-disk " + disk_size + " HDD"
 		preemptible: runtime_attributes.preemptible_tries
