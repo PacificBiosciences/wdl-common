@@ -8,6 +8,7 @@ task pbsv_call {
 	input {
 		String sample_id
 		Array[File] svsigs
+		Int sample_count?
 
 		File reference
 		File reference_index
@@ -17,6 +18,7 @@ task pbsv_call {
 	}
 
 	Int threads = 8
+	Int mem_gb = if select_first([sample_count, 1]) >3 then 96 else 64
 	Int disk_size = ceil((size(svsigs[0], "GB") * length(svsigs) + size(reference, "GB")) * 2 + 20)
 
 	command <<<
@@ -39,7 +41,7 @@ task pbsv_call {
 	runtime {
 		docker: "~{runtime_attributes.container_registry}/pbsv@sha256:798ca327f653c4e666b9f7c6a09260a762eea4e7e6864f490a87ed4106a53b98"
 		cpu: threads
-		memory: "64 GB"
+		memory: "~{mem_gb} GB"
 		disk: disk_size + " GB"
 		disks: "local-disk " + disk_size + " HDD"
 		preemptible: runtime_attributes.preemptible_tries
