@@ -8,7 +8,7 @@ task pbsv_call {
 	input {
 		String sample_id
 		Array[File] svsigs
-		Int sample_count?
+		Int? sample_count
 
 		File reference
 		File reference_index
@@ -18,7 +18,7 @@ task pbsv_call {
 	}
 
 	Int threads = 8
-	Int mem_gb = if select_first([sample_count, 1]) >3 then 96 else 64
+	Int mem_gb = if select_first([sample_count, 1]) > 3 then 96 else 64
 	Int disk_size = ceil((size(svsigs[0], "GB") * length(svsigs) + size(reference, "GB")) * 2 + 20)
 
 	command <<<
