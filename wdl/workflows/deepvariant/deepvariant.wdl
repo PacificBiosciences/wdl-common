@@ -18,32 +18,40 @@ workflow deepvariant {
 		RuntimeAttributes default_runtime_attributes
 	}
 
-	Int deepvariant_threads = 64
-
 	scatter (bam_object in aligned_bams) {
 		File aligned_bam = bam_object.data
 		File aligned_bam_index = bam_object.data_index
 	}
 
-	call deepvariant_make_examples {
-		input:
-			sample_id = sample_id,
-			aligned_bams = aligned_bam,
-			aligned_bam_indices = aligned_bam_index,
-			reference = reference_fasta.data,
-			reference_index = reference_fasta.data_index,
-			deepvariant_threads = deepvariant_threads,
-			deepvariant_version = deepvariant_version,
-			runtime_attributes = default_runtime_attributes
+	Int total_deepvariant_tasks = 64
+	Int num_shards = 8
+	Int tasks_per_shard = total_deepvariant_tasks / num_shards
+
+	scatter (shard_index in range(num_shards)) {
+		Int task_start_index = shard_index * tasks_per_shard
+
+		call deepvariant_make_examples {
+			input:
+				sample_id = sample_id,
+				aligned_bams = aligned_bam,
+				aligned_bam_indices = aligned_bam_index,
+				reference = reference_fasta.data,
+				reference_index = reference_fasta.data_index,
+				task_start_index = task_start_index,
+				tasks_per_shard = tasks_per_shard,
+				total_deepvariant_tasks = total_deepvariant_tasks,
+				deepvariant_version = deepvariant_version,
+				runtime_attributes = default_runtime_attributes
+		}
 	}
 
 	call deepvariant_call_variants {
 		input:
 			sample_id = sample_id,
 			reference_name = reference_name,
-			example_tfrecords = deepvariant_make_examples.example_tfrecords,
+			example_tfrecord_tars = deepvariant_make_examples.example_tfrecord_tar,
 			deepvariant_model = deepvariant_model,
-			deepvariant_threads = deepvariant_threads,
+			total_deepvariant_tasks = total_deepvariant_tasks,
 			deepvariant_version = deepvariant_version,
 			runtime_attributes = default_runtime_attributes
 	}
@@ -52,11 +60,11 @@ workflow deepvariant {
 		input:
 			sample_id = sample_id,
 			tfrecord = deepvariant_call_variants.tfrecord,
-			nonvariant_site_tfrecords = deepvariant_make_examples.nonvariant_site_tfrecords,
+			nonvariant_site_tfrecord_tars = deepvariant_make_examples.nonvariant_site_tfrecord_tar,
 			reference = reference_fasta.data,
 			reference_index = reference_fasta.data_index,
 			reference_name = reference_name,
-			deepvariant_threads = deepvariant_threads,
+			total_deepvariant_tasks = total_deepvariant_tasks,
 			deepvariant_version = deepvariant_version,
 			runtime_attributes = default_runtime_attributes
 	}
@@ -86,21 +94,27 @@ task deepvariant_make_examples {
 		File reference
 		File reference_index
 
-		Int deepvariant_threads
+		Int task_start_index
+		Int tasks_per_shard
+
+		Int total_deepvariant_tasks
 		String deepvariant_version
 
 		RuntimeAttributes runtime_attributes
 	}
 
+	Int task_end_index = task_start_index + tasks_per_shard - 1
 	Int disk_size = ceil(size(aligned_bams[0], "GB") * length(aligned_bams) * 2 + 50)
-	Int mem_gb = deepvariant_threads * 4
+	Int mem_gb = tasks_per_shard * 4
 
 	command <<<
 		set -euo pipefail
 
-		seq 0 ~{deepvariant_threads - 1} \
+		mkdir example_tfrecords nonvariant_site_tfrecords
+
+		seq ~{task_start_index} ~{task_end_index} \
 		| parallel \
-			--jobs ~{deepvariant_threads} \
+			--jobs ~{tasks_per_shard} \
 			--halt 2 \
 			/opt/deepvariant/bin/make_examples \
 				--norealign_reads \
@@ -118,19 +132,22 @@ task deepvariant_make_examples {
 				--mode calling \
 				--ref ~{reference} \
 				--reads ~{sep="," aligned_bams} \
-				--examples ~{sample_id}.examples.tfrecord@~{deepvariant_threads}.gz \
-				--gvcf ~{sample_id}.gvcf.tfrecord@~{deepvariant_threads}.gz \
+				--examples example_tfrecords/~{sample_id}.examples.tfrecord@~{total_deepvariant_tasks}.gz \
+				--gvcf nonvariant_site_tfrecords/~{sample_id}.gvcf.tfrecord@~{total_deepvariant_tasks}.gz \
 				--task {}
+
+		tar -zcvf ~{sample_id}.~{task_start_index}.example_tfrecords.tar.gz example_tfrecords
+		tar -zcvf ~{sample_id}.~{task_start_index}.nonvariant_site_tfrecords.tar.gz nonvariant_site_tfrecords
 	>>>
 
 	output {
-		Array[File] example_tfrecords = glob("~{sample_id}.examples.tfrecord*.gz")
-		Array[File] nonvariant_site_tfrecords = glob("~{sample_id}.gvcf.tfrecord*.gz")
+		File example_tfrecord_tar = "~{sample_id}.~{task_start_index}.example_tfrecords.tar.gz"
+		File nonvariant_site_tfrecord_tar = "~{sample_id}.~{task_start_index}.nonvariant_site_tfrecords.tar.gz"
 	}
 
 	runtime {
 		docker: "gcr.io/deepvariant-docker/deepvariant:~{deepvariant_version}"
-		cpu: deepvariant_threads
+		cpu: tasks_per_shard
 		memory: mem_gb + " GB"
 		disk: disk_size + " GB"
 		disks: "local-disk " + disk_size + " HDD"
@@ -146,29 +163,30 @@ task deepvariant_call_variants {
 	input {
 		String sample_id
 		String reference_name
-		Array[File] example_tfrecords
+		Array[File] example_tfrecord_tars
 
 		DeepVariantModel? deepvariant_model
-		Int deepvariant_threads
+		Int total_deepvariant_tasks
 		String deepvariant_version
 
 		RuntimeAttributes runtime_attributes
 	}
 
-	Int mem_gb = deepvariant_threads * 4
-	Int disk_size = ceil(size(example_tfrecords[0], "GB") * length(example_tfrecords) * 2 + 100)
+	Int mem_gb = total_deepvariant_tasks * 4
+	Int disk_size = ceil(size(example_tfrecord_tars[0], "GB") * length(example_tfrecord_tars) * 2 + 100)
 
 	command <<<
 		set -euo pipefail
 
-		deepvariant_model_path=~{if (defined(deepvariant_model)) then sub(select_first([deepvariant_model]).model.data, "\\.data.*", "") else "/opt/models/pacbio/model.ckpt"}
+		while read -r tfrecord_tar || [[ -n "${tfrecord_tar}" ]]; do
+			tar -zxvf "${tfrecord_tar}"
+		done < ~{write_lines(example_tfrecord_tars)}
 
-		# extract the path where the first example_tfrecord is located; all example_tfrecords will be located at the same base path
-		example_tfrecord_dir=$(dirname ~{example_tfrecords[0]})
+		deepvariant_model_path=~{if (defined(deepvariant_model)) then sub(select_first([deepvariant_model]).model.data, "\\.data.*", "") else "/opt/models/pacbio/model.ckpt"}
 
 		/opt/deepvariant/bin/call_variants \
 			--outfile ~{sample_id}.~{reference_name}.call_variants_output.tfrecord.gz \
-			--examples "$example_tfrecord_dir/~{sample_id}.examples.tfrecord@~{deepvariant_threads}.gz" \
+			--examples "example_tfrecords/~{sample_id}.examples.tfrecord@~{total_deepvariant_tasks}.gz" \
 			--checkpoint "${deepvariant_model_path}"
 	>>>
 
@@ -178,7 +196,7 @@ task deepvariant_call_variants {
 
 	runtime {
 		docker: "gcr.io/deepvariant-docker/deepvariant:~{deepvariant_version}"
-		cpu: deepvariant_threads
+		cpu: total_deepvariant_tasks
 		memory: mem_gb + " GB"
 		disk: disk_size + " GB"
 		disks: "local-disk " + disk_size + " HDD"
@@ -194,31 +212,32 @@ task deepvariant_postprocess_variants {
 	input {
 		String sample_id
 		File tfrecord
-		Array[File] nonvariant_site_tfrecords
+		Array[File] nonvariant_site_tfrecord_tars
 
 		File reference
 		File reference_index
 		String reference_name
 
-		Int deepvariant_threads
+		Int total_deepvariant_tasks
 		String deepvariant_version
 
 		RuntimeAttributes runtime_attributes
 	}
 
-	Int disk_size = ceil((size(tfrecord, "GB") + size(reference, "GB") + size(nonvariant_site_tfrecords[0], "GB") * length(nonvariant_site_tfrecords)) * 2 + 20)
+	Int disk_size = ceil((size(tfrecord, "GB") + size(reference, "GB") + size(nonvariant_site_tfrecord_tars[0], "GB") * length(nonvariant_site_tfrecord_tars)) * 2 + 20)
 
 	command <<<
 		set -euo pipefail
 
-		# extract the path where the first nonvariant_site_tfrecord is located; all nonvariant_site_tfrecord will be located at the same base path
-		nonvariant_site_tfrecord_dir=$(dirname ~{nonvariant_site_tfrecords[0]})
+		while read -r nonvariant_site_tfrecord_tar || [[ -n "${nonvariant_site_tfrecord_tar}" ]]; do
+			tar -zxvf "${nonvariant_site_tfrecord_tar}"
+		done < ~{write_lines(nonvariant_site_tfrecord_tars)}
 
 		/opt/deepvariant/bin/postprocess_variants \
 			--ref ~{reference} \
 			--infile ~{tfrecord} \
 			--outfile ~{sample_id}.~{reference_name}.deepvariant.vcf.gz \
-			--nonvariant_site_tfrecord_path "$nonvariant_site_tfrecord_dir/~{sample_id}.gvcf.tfrecord@~{deepvariant_threads}.gz" \
+			--nonvariant_site_tfrecord_path "nonvariant_site_tfrecords/~{sample_id}.gvcf.tfrecord@~{total_deepvariant_tasks}.gz" \
 			--gvcf_outfile ~{sample_id}.~{reference_name}.deepvariant.g.vcf.gz
 	>>>
 
