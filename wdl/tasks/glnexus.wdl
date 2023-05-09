@@ -24,7 +24,7 @@ task glnexus {
 	command <<<
 		set -euo pipefail
 
-		glnexus_cli --help
+		glnexus_cli --help 2>&1 | grep -Eo 'glnexus_cli release v[0-9a-z.-]+'
 
 		glnexus_cli \
 			--threads ~{threads} \
