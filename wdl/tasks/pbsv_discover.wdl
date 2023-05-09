@@ -20,6 +20,8 @@ task pbsv_discover {
 	command <<<
 		set -euo pipefail
 
+		pbsv --version
+
 		pbsv discover \
 			--log-level INFO \
 			--hifi \

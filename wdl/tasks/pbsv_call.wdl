@@ -27,6 +27,8 @@ task pbsv_call {
 	command <<<
 		set -euo pipefail
 
+		pbsv --version
+
 		pbsv call \
 			--hifi \
 			--min-sv-length 20 \

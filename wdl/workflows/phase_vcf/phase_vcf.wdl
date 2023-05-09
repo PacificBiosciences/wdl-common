@@ -99,11 +99,15 @@ task split_vcf {
 	command <<<
 		set -euo pipefail
 
+		tabix --version
+
 		tabix \
 			-h \
 			~{vcf} \
 			~{region} \
 		> ~{vcf_basename}.~{region_substituted}.vcf
+
+		bgzip --version
 
 		bgzip -@{threads} ~{vcf_basename}.~{region_substituted}.vcf
 		tabix ~{vcf_basename}.~{region_substituted}.vcf.gz
@@ -142,6 +146,10 @@ task bcftools_concat {
 
 	command <<<
 		set -euo pipefail
+
+		bcftools --version
+		
+		tabix --version
 
 		bcftools concat \
 			--threads ~{threads - 1} \

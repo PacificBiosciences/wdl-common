@@ -18,6 +18,8 @@ task samtools_fasta {
 	command <<<
 		set -euo pipefail
 
+		samtools --version
+
 		samtools fasta \
 			-@ ~{threads - 1} \
 			~{bam} \

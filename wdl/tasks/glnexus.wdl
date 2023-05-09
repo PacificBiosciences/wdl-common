@@ -35,11 +35,15 @@ task glnexus {
 			~{sep=' ' gvcfs} \
 		> ~{cohort_id}.~{reference_name}.deepvariant.glnexus.bcf
 
+		bcftools --version
+
 		bcftools view \
 			--threads ~{threads} \
 			--output-type z \
 			--output-file ~{cohort_id}.~{reference_name}.deepvariant.glnexus.vcf.gz \
 			~{cohort_id}.~{reference_name}.deepvariant.glnexus.bcf
+
+		tabix --version
 
 		tabix ~{cohort_id}.~{reference_name}.deepvariant.glnexus.vcf.gz
 	>>>

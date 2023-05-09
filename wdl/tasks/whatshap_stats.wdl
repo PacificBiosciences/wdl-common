@@ -20,6 +20,8 @@ task whatshap_stats {
 	command <<<
 		set -euo pipefail
 
+		whatshap --version
+
 		whatshap stats \
 			--gtf ~{output_basename}.gtf \
 			--tsv ~{output_basename}.tsv \
