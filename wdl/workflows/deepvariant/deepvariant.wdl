@@ -112,6 +112,8 @@ task deepvariant_make_examples {
 
 		mkdir example_tfrecords nonvariant_site_tfrecords
 
+		echo "DeepVariant version: $VERSION"
+
 		seq ~{task_start_index} ~{task_end_index} \
 		| parallel \
 			--jobs ~{tasks_per_shard} \
@@ -184,6 +186,8 @@ task deepvariant_call_variants {
 
 		deepvariant_model_path=~{if (defined(deepvariant_model)) then sub(select_first([deepvariant_model]).model.data, "\\.data.*", "") else "/opt/models/pacbio/model.ckpt"}
 
+		echo "DeepVariant version: $VERSION"
+
 		/opt/deepvariant/bin/call_variants \
 			--outfile ~{sample_id}.~{reference_name}.call_variants_output.tfrecord.gz \
 			--examples "example_tfrecords/~{sample_id}.examples.tfrecord@~{total_deepvariant_tasks}.gz" \
@@ -232,6 +236,8 @@ task deepvariant_postprocess_variants {
 		while read -r nonvariant_site_tfrecord_tar || [[ -n "${nonvariant_site_tfrecord_tar}" ]]; do
 			tar -zxvf "${nonvariant_site_tfrecord_tar}"
 		done < ~{write_lines(nonvariant_site_tfrecord_tars)}
+
+		echo "DeepVariant version: $VERSION"
 
 		/opt/deepvariant/bin/postprocess_variants \
 			--ref ~{reference} \
