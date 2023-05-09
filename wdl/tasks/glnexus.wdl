@@ -24,6 +24,8 @@ task glnexus {
 	command <<<
 		set -euo pipefail
 
+		glnexus_cli --help
+
 		glnexus_cli \
 			--threads ~{threads} \
 			--mem-gbytes ~{mem_gbytes} \
