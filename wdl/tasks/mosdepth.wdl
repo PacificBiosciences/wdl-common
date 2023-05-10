@@ -19,6 +19,8 @@ task mosdepth {
 	command <<<
 		set -euo pipefail
 
+		mosdepth --version
+
 		mosdepth \
 			--threads ~{threads - 1} \
 			--by 500 \

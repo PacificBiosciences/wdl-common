@@ -25,6 +25,8 @@ task whatshap_phase {
 	command <<<
 		set -euo pipefail
 
+		whatshap --version
+
 		whatshap phase \
 			--indels \
 			--reference ~{reference} \

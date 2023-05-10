@@ -18,11 +18,15 @@ task zip_index_vcf {
 	command <<<
 		set -euo pipefail
 
+		bgzip --version
+
 		bgzip \
 			--threads ~{threads} \
 			--stdout \
 			~{vcf} \
 		> ~{vcf_basename}.gz
+
+		tabix --version
 
 		tabix \
 			--preset vcf \

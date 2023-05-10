@@ -28,6 +28,8 @@ task whatshap_haplotag {
 	command <<<
 		set -euo pipefail
 
+		whatshap --version
+
 		whatshap haplotag \
 			~{params} \
 			--tag-supplementary \
@@ -36,6 +38,8 @@ task whatshap_haplotag {
 			--output ~{output_bam} \
 			~{phased_vcf} \
 			~{aligned_bam}
+
+		samtools --version
 
 		samtools index \
 			-@ ~{threads - 1} \

@@ -24,6 +24,8 @@ task glnexus {
 	command <<<
 		set -euo pipefail
 
+		glnexus_cli --help 2>&1 | grep -Eo 'glnexus_cli release v[0-9a-z.-]+'
+
 		glnexus_cli \
 			--threads ~{threads} \
 			--mem-gbytes ~{mem_gbytes} \
@@ -33,11 +35,15 @@ task glnexus {
 			~{sep=' ' gvcfs} \
 		> ~{cohort_id}.~{reference_name}.deepvariant.glnexus.bcf
 
+		bcftools --version
+
 		bcftools view \
 			--threads ~{threads} \
 			--output-type z \
 			--output-file ~{cohort_id}.~{reference_name}.deepvariant.glnexus.vcf.gz \
 			~{cohort_id}.~{reference_name}.deepvariant.glnexus.bcf
+
+		tabix --version
 
 		tabix ~{cohort_id}.~{reference_name}.deepvariant.glnexus.vcf.gz
 	>>>
