@@ -24,7 +24,8 @@ task glnexus {
 	command <<<
 		set -euo pipefail
 
-		glnexus_cli --help 2>&1 | grep -Eo 'glnexus_cli release v[0-9a-z.-]+'
+		# glneux_cli has no version option
+		glnexus_cli --help 2>&1 | grep -Eo 'glnexus_cli release v[0-9a-f.-]+'
 
 		glnexus_cli \
 			--threads ~{threads} \
