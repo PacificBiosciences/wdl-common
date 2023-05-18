@@ -14,14 +14,12 @@ task glnexus {
 
 		File? regions_bed
 
-		Int? glnexus_mem_gb
+		Int mem_gb = 30
 
 		RuntimeAttributes runtime_attributes
 	}
 
 	Int threads = 24
-	Int default_mem_gb = 30
-	Int mem_gb = select_first([glnexus_mem_gb, default_mem_gb])
 	Int disk_size = ceil((size(gvcfs[0], "GB") * length(gvcfs)) * 2 + 100)
 
 	command <<<
