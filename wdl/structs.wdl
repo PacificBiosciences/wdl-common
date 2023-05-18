@@ -20,13 +20,3 @@ struct RuntimeAttributes {
 	String queue_arn
 	String container_registry
 }
-
-struct ReferenceData {
-        String name
-        IndexData fasta
-
-        File tandem_repeat_bed
-        File chromosome_lengths
-        File exons_bed
-}
-
