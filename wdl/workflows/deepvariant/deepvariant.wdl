@@ -72,7 +72,6 @@ workflow deepvariant {
 	output {
 		IndexData vcf = {"data": deepvariant_postprocess_variants.vcf, "data_index": deepvariant_postprocess_variants.vcf_index}
 		IndexData gvcf = {"data": deepvariant_postprocess_variants.gvcf, "data_index": deepvariant_postprocess_variants.gvcf_index}
-		File report = deepvariant_postprocess_variants.report
 	}
 
 	parameter_meta {
@@ -240,6 +239,7 @@ task deepvariant_postprocess_variants {
 		echo "DeepVariant version: $VERSION"
 
 		/opt/deepvariant/bin/postprocess_variants \
+			--vcf_stats_report=false \
 			--ref ~{reference} \
 			--infile ~{tfrecord} \
 			--outfile ~{sample_id}.~{reference_name}.deepvariant.vcf.gz \
@@ -252,7 +252,6 @@ task deepvariant_postprocess_variants {
 		File vcf_index = "~{sample_id}.~{reference_name}.deepvariant.vcf.gz.tbi"
 		File gvcf = "~{sample_id}.~{reference_name}.deepvariant.g.vcf.gz"
 		File gvcf_index = "~{sample_id}.~{reference_name}.deepvariant.g.vcf.gz.tbi"
-		File report = "~{sample_id}.~{reference_name}.deepvariant.visual_report.html"
 	}
 
 	runtime {

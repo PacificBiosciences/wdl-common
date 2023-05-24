@@ -14,11 +14,12 @@ task glnexus {
 
 		File? regions_bed
 
+		Int mem_gb = 30
+
 		RuntimeAttributes runtime_attributes
 	}
 
 	Int threads = 24
-	Int mem_gbytes = 30
 	Int disk_size = ceil((size(gvcfs[0], "GB") * length(gvcfs)) * 2 + 100)
 
 	command <<<
@@ -29,7 +30,7 @@ task glnexus {
 
 		glnexus_cli \
 			--threads ~{threads} \
-			--mem-gbytes ~{mem_gbytes} \
+			--mem-gbytes ~{mem_gb} \
 			--dir ~{cohort_id}.~{reference_name}.GLnexus.DB \
 			--config DeepVariant_unfiltered \
 			~{"--bed " + regions_bed} \
@@ -57,7 +58,7 @@ task glnexus {
 	runtime {
 		docker: "ghcr.io/dnanexus-rnd/glnexus:v1.4.1"
 		cpu: threads
-		memory: mem_gbytes + " GB"
+		memory: mem_gb + " GB"
 		disk: disk_size + " GB"
 		disks: "local-disk " + disk_size + " HDD"
 		preemptible: runtime_attributes.preemptible_tries
