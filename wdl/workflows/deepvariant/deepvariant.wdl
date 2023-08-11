@@ -103,7 +103,7 @@ task deepvariant_make_examples {
 	}
 
 	Int task_end_index = task_start_index + tasks_per_shard - 1
-	Int disk_size = ceil(size(aligned_bams[0], "GB") * length(aligned_bams) * 2 + 50)
+	Int disk_size = ceil(size(aligned_bams, "GB") * 2 + 50)
 	Int mem_gb = tasks_per_shard * 4
 
 	command <<<
@@ -174,7 +174,7 @@ task deepvariant_call_variants {
 	}
 
 	Int mem_gb = total_deepvariant_tasks * 4
-	Int disk_size = ceil(size(example_tfrecord_tars[0], "GB") * length(example_tfrecord_tars) * 2 + 100)
+	Int disk_size = ceil(size(example_tfrecord_tars, "GB") * 2 + 100)
 
 	command <<<
 		set -euo pipefail
