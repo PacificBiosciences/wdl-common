@@ -142,7 +142,7 @@ task bcftools_concat {
 	}
 
 	Int threads = 2
-	Int disk_size = ceil(size(vcfs[0], "GB") * length(vcfs) * 2 + 20)
+	Int disk_size = ceil(size(vcfs, "GB") * 2 + 20)
 
 	command <<<
 		set -euo pipefail
