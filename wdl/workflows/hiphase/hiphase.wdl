@@ -50,7 +50,7 @@ workflow hiphase {
 			phased_vcf_names = phased_vcf_name,
 			phased_vcf_index_names = phased_vcf_index_name,
 			bams = bam,
-			bam_indices = bam_index,	
+			bam_indices = bam_index,
 			haplotagged_bam_names = select_first([haplotagged_bam_name, []]),
 			haplotagged_bam_index_names = select_first([haplotagged_bam_index_name, []]),
 			reference = reference_fasta.data,
@@ -123,16 +123,16 @@ task run_hiphase {
 
 		# phase VCFs and haplotag BAM
 		hiphase --threads ~{threads} \
-		~{sep=" " prefix("--sample-name ", sample_ids)} \
-		~{sep=" " prefix("--vcf ", vcfs)} \
-		~{sep=" " prefix("--output-vcf ", phased_vcf_names)} \
-		~{sep=" " prefix("--bam ", bams)} \
-		~{true="--output-bam " false="" length(haplotagged_bam_names) > 0} ~{sep=" --output-bam " haplotagged_bam_names} \
-		--reference ~{reference} \
-		--summary-file ~{id}.~{refname}.hiphase.stats.tsv \
-		--blocks-file ~{id}.~{refname}.hiphase.blocks.tsv \
-		--haplotag-file ~{id}.~{refname}.hiphase.haplotags.tsv \
-		--global-realignment-cputime 300
+			~{sep=" " prefix("--sample-name ", sample_ids)} \
+			~{sep=" " prefix("--vcf ", vcfs)} \
+			~{sep=" " prefix("--output-vcf ", phased_vcf_names)} \
+			~{sep=" " prefix("--bam ", bams)} \
+			~{true="--output-bam " false="" length(haplotagged_bam_names) > 0} ~{sep=" --output-bam " haplotagged_bam_names} \
+			--reference ~{reference} \
+			--summary-file ~{id}.~{refname}.hiphase.stats.tsv \
+			--blocks-file ~{id}.~{refname}.hiphase.blocks.tsv \
+			--haplotag-file ~{id}.~{refname}.hiphase.haplotags.tsv \
+			--global-realignment-cputime 300
 
 		# index phased VCFs
 		bcftools --version
