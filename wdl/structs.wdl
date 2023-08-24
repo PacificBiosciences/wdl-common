@@ -19,4 +19,9 @@ struct RuntimeAttributes {
 	String zones
 	String queue_arn
 	String container_registry
+
+	String accelerator_type
+
+	String hpc_partition
+	String hpc_partition_gpu
 }

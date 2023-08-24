@@ -14,6 +14,7 @@ workflow deepvariant {
 
 		String deepvariant_version
 		DeepVariantModel? deepvariant_model
+		Boolean gpu = false
 
 		RuntimeAttributes default_runtime_attributes
 	}
@@ -51,6 +52,7 @@ workflow deepvariant {
 			reference_name = reference_name,
 			example_tfrecord_tars = deepvariant_make_examples.example_tfrecord_tar,
 			deepvariant_model = deepvariant_model,
+			gpu = gpu,
 			total_deepvariant_tasks = total_deepvariant_tasks,
 			deepvariant_version = deepvariant_version,
 			runtime_attributes = default_runtime_attributes
@@ -80,6 +82,7 @@ workflow deepvariant {
 		reference: {help: "Reference genome data"}
 		deepvariant_version: {help: "Version of deepvariant to use"}
 		deepvariant_model: {help: "Optional deepvariant model file to use"}
+		gpu: {help: "Use GPU for deepvariant_call_variants; default false"}
 		default_runtime_attributes: {help: "Default RuntimeAttributes; spot if preemptible was set to true, otherwise on_demand"}
 	}
 }
@@ -170,10 +173,13 @@ task deepvariant_call_variants {
 		Int total_deepvariant_tasks
 		String deepvariant_version
 
+		Boolean gpu
+
 		RuntimeAttributes runtime_attributes
 	}
 
-	Int mem_gb = total_deepvariant_tasks * 4
+	Int num_cpus = if (gpu) then 2 else 64
+	Int mem_gb = num_cpus * 4
 	Int disk_size = ceil(size(example_tfrecord_tars, "GB") * 2 + 100)
 
 	command <<<
@@ -198,8 +204,8 @@ task deepvariant_call_variants {
 	}
 
 	runtime {
-		docker: "gcr.io/deepvariant-docker/deepvariant:~{deepvariant_version}"
-		cpu: total_deepvariant_tasks
+		docker: "gcr.io/deepvariant-docker/deepvariant:~{deepvariant_version}" + if (gpu) then "-gpu" else ""
+		cpu: num_cpus
 		memory: mem_gb + " GB"
 		disk: disk_size + " GB"
 		disks: "local-disk " + disk_size + " HDD"
@@ -208,6 +214,10 @@ task deepvariant_call_variants {
 		awsBatchRetryAttempts: runtime_attributes.max_retries
 		queueArn: runtime_attributes.queue_arn
 		zones: runtime_attributes.zones
+		gpu: gpu
+		acceleratorCount: if (gpu) then 1 else 0  # !UnknownRuntimeKey; used by AWS HealthOmics or HPC
+		acceleratorType: if (gpu) then runtime_attributes.accelerator_type else ""  # !UnknownRuntimeKey; used by AWS HealthOmics or HPC
+		hpc_partition: if (gpu) then runtime_attributes.hpc_partition_gpu else runtime_attributes.hpc_partition  # !UnknownRuntimeKey; non-standard key for HPC
 	}
 }
 

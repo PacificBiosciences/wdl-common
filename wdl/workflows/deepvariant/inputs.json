@@ -13,11 +13,16 @@
   "deepvariant.reference_name": "String",
   "deepvariant.deepvariant_version": "String",
   "deepvariant.deepvariant_model": "WomCompositeType {\n model -> WomCompositeType {\n data -> File\ndata_index -> File \n}\nmetadata -> File \n}? (optional)",
+  "deepvariant.gpu": "Boolean (optional, default = false)",
   "deepvariant.default_runtime_attributes": {
     "preemptible_tries": "Int",
     "max_retries": "Int",
     "zones": "String",
     "queue_arn": "String",
+    "aws_accelerator_type": "String",
+    "hpc_partition": "String",
+    "hpc_partition_gpu": "String",
+    "hpc_accelerator_type": "String",
     "container_registry": "String"
   }
 }

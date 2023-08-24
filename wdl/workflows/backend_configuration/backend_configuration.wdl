@@ -10,6 +10,10 @@ workflow backend_configuration {
 		String? zones
 		String? aws_spot_queue_arn
 		String? aws_on_demand_queue_arn
+		String? aws_accelerator_type
+		String? hpc_partition
+		String? hpc_partition_gpu
+		String? hpc_accelerator_type
 		String container_registry = "quay.io/pacbio"
 	}
 
@@ -24,6 +28,9 @@ workflow backend_configuration {
 			"max_retries": 0,
 			"zones": select_first([zones]),
 			"queue_arn": "",
+			"accelerator_type": "",
+			"hpc_partition": "",
+			"hpc_partition_gpu": "",
 			"container_registry": container_registry
 		}
 
@@ -32,6 +39,9 @@ workflow backend_configuration {
 			"max_retries": 0,
 			"zones": select_first([zones]),
 			"queue_arn": "",
+			"accelerator_type": "",
+			"hpc_partition": "",
+			"hpc_partition_gpu": "",
 			"container_registry": container_registry
 		}
 	}
@@ -46,6 +56,9 @@ workflow backend_configuration {
 			"max_retries": 3,
 			"zones": "",
 			"queue_arn": "",
+			"accelerator_type": "",
+			"hpc_partition": "",
+			"hpc_partition_gpu": "",
 			"container_registry": container_registry
 		}
 
@@ -54,6 +67,9 @@ workflow backend_configuration {
 			"max_retries": 0,
 			"zones": "",
 			"queue_arn": "",
+			"accelerator_type": "",
+			"hpc_partition": "",
+			"hpc_partition_gpu": "",
 			"container_registry": container_registry
 		}
 	}
@@ -67,11 +83,18 @@ workflow backend_configuration {
 
 		# max_retries applies to failures due to preemption or to a nonzero rc
 		# preemptible is not used in AWS
+
+		# If you plan to use GPU, you must specify the aws_accelerator_type.
+		# aws_accelerator_type must be one of ["nvidia-tesla-a10g", "nvidia-tesla-t4", "nvidia-tesla-t4-a10g"]
+		# The last value will use either a T4 or an A10g based on availability at the time of the run.
 		RuntimeAttributes aws_spot_runtime_attributes = {
 			"preemptible_tries": 3,
 			"max_retries": 3,
 			"zones": select_first([zones]),
 			"queue_arn": select_first([aws_spot_queue_arn, ""]),
+			"accelerator_type": "",
+			"hpc_partition": "",
+			"hpc_partition_gpu": "",
 			"container_registry": container_registry
 		}
 
@@ -80,17 +103,27 @@ workflow backend_configuration {
 			"max_retries": 0,
 			"zones": select_first([zones]),
 			"queue_arn": select_first([aws_on_demand_queue_arn, ""]),
+			"accelerator_type": select_first([aws_accelerator_type, ""]),
+			"hpc_partition": "",
+			"hpc_partition_gpu": "",
 			"container_registry": container_registry
 		}
 	}
 
 	if (backend == "HPC") {
 		# No distinction between preemptible and on-demand in HPC configuration
+		# The default hpc_partition (queue) must be specified.
+		# If you plan to use GPU, you can specify a different partition with GPUs.
+		# Additionally, to restrict to a specific GPU available on this partition,
+		# specify with hpc_accelerator_type.
 		RuntimeAttributes hpc_runtime_attributes = {
 			"preemptible_tries": 0,
 			"max_retries": 3,
 			"zones": "",
 			"queue_arn": "",
+			"accelerator_type": select_first([hpc_accelerator_type, ""]),
+			"hpc_partition": select_first([hpc_partition]),
+			"hpc_partition_gpu": select_first([hpc_partition_gpu, hpc_partition]),
 			"container_registry": container_registry
 		}
 	}
@@ -115,5 +148,9 @@ workflow backend_configuration {
 		zones: {help: "Zones where compute will take place; required if backend is set to 'AWS' or 'GCP'"}
 		aws_spot_queue_arn: {help: "Queue ARN for the spot batch queue; required if backend is set to 'AWS'"}
 		aws_on_demand_queue_arn: {help: "Queue ARN for the on demand batch queue; required if backend is set to 'AWS'"}
+		aws_accelerator_type: {help: "AWS GPU type; optional if backend is set to 'AWS'"}
+		hpc_partition: {help: "Default HPC partition or queue for most tasks; required if backend is set to 'HPC'"}
+		hpc_partition_gpu: {help: "HPC partition with GPUs, if available; optional if backend is set to 'HPC'"}
+		hpc_accelerator_type: {help: "HPC GPU type; optional if backend is set to 'HPC'"}
 	}
 }
