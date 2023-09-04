@@ -23,7 +23,7 @@ task bcftools_stats {
 	command <<<
 		set -euo pipefail
 
-		bcftools --help
+		bcftools --version
 
 		bcftools stats \
 			--threads ~{threads - 1} \
