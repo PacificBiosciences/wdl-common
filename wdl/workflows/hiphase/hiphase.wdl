@@ -112,9 +112,12 @@ task run_hiphase {
 		RuntimeAttributes runtime_attributes
 	}
 
+	# to handle single samples with very high depth, we had to increase memory to 3*gpu
+	# to handle cohorts with very high depth, we had to increase memory to 4*gpu
 	Int threads = 16
-	Int mem_gb = threads * 2
+	Int mem_gb = threads * 4
 	Int disk_size = ceil(size(vcfs, "GB") + size(reference, "GB") + size(bams, "GB") * 2 + 20)
+	String haplotags_param = if length(haplotagged_bam_names) > 0 then "--haplotag-file ~{id}.~{refname}.hiphase.haplotags.tsv" else ""
 
 	command <<<
 		set -euo pipefail
@@ -131,7 +134,7 @@ task run_hiphase {
 			--reference ~{reference} \
 			--summary-file ~{id}.~{refname}.hiphase.stats.tsv \
 			--blocks-file ~{id}.~{refname}.hiphase.blocks.tsv \
-			--haplotag-file ~{id}.~{refname}.hiphase.haplotags.tsv \
+			~{haplotags_param} \
 			--global-realignment-cputime 300
 
 		# index phased VCFs
@@ -149,7 +152,7 @@ task run_hiphase {
 		Array[File] haplotagged_bam_indices = glob("*.haplotagged.bam.bai")
 		File hiphase_stats = "~{id}.~{refname}.hiphase.stats.tsv"
 		File hiphase_blocks = "~{id}.~{refname}.hiphase.blocks.tsv"
-		File hiphase_haplotags = "~{id}.~{refname}.hiphase.haplotags.tsv"
+		File hiphase_haplotags = glob("~{id}.~{refname}.hiphase.haplotags.tsv")[0]
 	}
 
 	runtime {
