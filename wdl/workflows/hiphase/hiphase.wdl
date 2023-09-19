@@ -50,7 +50,7 @@ workflow hiphase {
 			phased_vcf_names = phased_vcf_name,
 			phased_vcf_index_names = phased_vcf_index_name,
 			bams = bam,
-			bam_indices = bam_index,	
+			bam_indices = bam_index,
 			haplotagged_bam_names = select_first([haplotagged_bam_name, []]),
 			haplotagged_bam_index_names = select_first([haplotagged_bam_index_name, []]),
 			reference = reference_fasta.data,
@@ -73,7 +73,7 @@ workflow hiphase {
 		Array[IndexData] haplotagged_bams = haplotagged_bam
 		File hiphase_stats = run_hiphase.hiphase_stats
 		File hiphase_blocks = run_hiphase.hiphase_blocks
-		File hiphase_haplotags = run_hiphase.hiphase_haplotags
+		File? hiphase_haplotags = run_hiphase.hiphase_haplotags
 	}
 
 	parameter_meta {
@@ -112,9 +112,12 @@ task run_hiphase {
 		RuntimeAttributes runtime_attributes
 	}
 
+	# to handle single samples with very high depth, we had to increase memory to 3*gpu
+	# to handle cohorts with very high depth, we had to increase memory to 4*gpu
 	Int threads = 16
-	Int mem_gb = threads * 2
+	Int mem_gb = threads * 4
 	Int disk_size = ceil(size(vcfs, "GB") + size(reference, "GB") + size(bams, "GB") * 2 + 20)
+	String haplotags_param = if length(haplotagged_bam_names) > 0 then "--haplotag-file ~{id}.~{refname}.hiphase.haplotags.tsv" else ""
 
 	command <<<
 		set -euo pipefail
@@ -123,16 +126,16 @@ task run_hiphase {
 
 		# phase VCFs and haplotag BAM
 		hiphase --threads ~{threads} \
-		~{sep=" " prefix("--sample-name ", sample_ids)} \
-		~{sep=" " prefix("--vcf ", vcfs)} \
-		~{sep=" " prefix("--output-vcf ", phased_vcf_names)} \
-		~{sep=" " prefix("--bam ", bams)} \
-		~{true="--output-bam " false="" length(haplotagged_bam_names) > 0} ~{sep=" --output-bam " haplotagged_bam_names} \
-		--reference ~{reference} \
-		--summary-file ~{id}.~{refname}.hiphase.stats.tsv \
-		--blocks-file ~{id}.~{refname}.hiphase.blocks.tsv \
-		--haplotag-file ~{id}.~{refname}.hiphase.haplotags.tsv \
-		--global-realignment-cputime 300
+			~{sep=" " prefix("--sample-name ", sample_ids)} \
+			~{sep=" " prefix("--vcf ", vcfs)} \
+			~{sep=" " prefix("--output-vcf ", phased_vcf_names)} \
+			~{sep=" " prefix("--bam ", bams)} \
+			~{true="--output-bam " false="" length(haplotagged_bam_names) > 0} ~{sep=" --output-bam " haplotagged_bam_names} \
+			--reference ~{reference} \
+			--summary-file ~{id}.~{refname}.hiphase.stats.tsv \
+			--blocks-file ~{id}.~{refname}.hiphase.blocks.tsv \
+			~{haplotags_param} \
+			--global-realignment-cputime 300
 
 		# index phased VCFs
 		bcftools --version
@@ -149,7 +152,7 @@ task run_hiphase {
 		Array[File] haplotagged_bam_indices = glob("*.haplotagged.bam.bai")
 		File hiphase_stats = "~{id}.~{refname}.hiphase.stats.tsv"
 		File hiphase_blocks = "~{id}.~{refname}.hiphase.blocks.tsv"
-		File hiphase_haplotags = "~{id}.~{refname}.hiphase.haplotags.tsv"
+		File? hiphase_haplotags = "~{id}.~{refname}.hiphase.haplotags.tsv"
 	}
 
 	runtime {
