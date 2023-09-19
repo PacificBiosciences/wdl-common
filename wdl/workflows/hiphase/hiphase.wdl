@@ -73,7 +73,7 @@ workflow hiphase {
 		Array[IndexData] haplotagged_bams = haplotagged_bam
 		File hiphase_stats = run_hiphase.hiphase_stats
 		File hiphase_blocks = run_hiphase.hiphase_blocks
-		File hiphase_haplotags = run_hiphase.hiphase_haplotags
+		File? hiphase_haplotags = run_hiphase.hiphase_haplotags
 	}
 
 	parameter_meta {
@@ -152,7 +152,7 @@ task run_hiphase {
 		Array[File] haplotagged_bam_indices = glob("*.haplotagged.bam.bai")
 		File hiphase_stats = "~{id}.~{refname}.hiphase.stats.tsv"
 		File hiphase_blocks = "~{id}.~{refname}.hiphase.blocks.tsv"
-		File hiphase_haplotags = glob("~{id}.~{refname}.hiphase.haplotags.tsv")[0]
+		File? hiphase_haplotags = "~{id}.~{refname}.hiphase.haplotags.tsv"
 	}
 
 	runtime {
