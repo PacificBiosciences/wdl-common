@@ -56,7 +56,7 @@ task glnexus {
 	}
 
 	runtime {
-		docker: "ghcr.io/dnanexus-rnd/glnexus:v1.4.1"
+		docker: "~{runtime_attributes.container_registry}/glnexus@sha256:3882cbfba342b1a8cd22955c941fb174480ca468df2027ca267114db3ac1d06d"
 		cpu: threads
 		memory: mem_gb + " GB"
 		disk: disk_size + " GB"
