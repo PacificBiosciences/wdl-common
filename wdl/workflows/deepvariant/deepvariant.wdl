@@ -227,7 +227,7 @@ task deepvariant_postprocess_variants {
 		RuntimeAttributes runtime_attributes
 	}
 
-	Int disk_size = ceil((size(tfrecord, "GB") + size(reference, "GB") + size(nonvariant_site_tfrecord_tars[0], "GB") * length(nonvariant_site_tfrecord_tars)) * 2 + 20)
+	Int disk_size = ceil((size(tfrecord, "GB") + size(reference, "GB") + size(nonvariant_site_tfrecord_tars, "GB")) * 2 + 20)
 
 	command <<<
 		set -euo pipefail

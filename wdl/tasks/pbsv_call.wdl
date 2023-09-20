@@ -20,7 +20,7 @@ task pbsv_call {
 	}
 
 	Int threads = 8
-	Int disk_size = ceil((size(svsigs[0], "GB") * length(svsigs) + size(reference, "GB")) * 2 + 20)
+	Int disk_size = ceil((size(svsigs, "GB") + size(reference, "GB")) * 2 + 20)
 
 	command <<<
 		set -euo pipefail
