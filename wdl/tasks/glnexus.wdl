@@ -20,7 +20,7 @@ task glnexus {
 	}
 
 	Int threads = 24
-	Int disk_size = ceil((size(gvcfs[0], "GB") * length(gvcfs)) * 2 + 100)
+	Int disk_size = ceil(size(gvcfs, "GB") * 2 + 100)
 
 	command <<<
 		set -euo pipefail

@@ -20,7 +20,7 @@ task whatshap_phase {
 	}
 
 	String vcf_basename = basename(vcf, ".vcf.gz")
-	Int disk_size = ceil((size(vcf, "GB") + size(reference, "GB") + size(aligned_bams[0], "GB") * length(aligned_bams)) * 2 + 20)
+	Int disk_size = ceil((size(vcf, "GB") + size(reference, "GB") + size(aligned_bams, "GB")) * 2 + 20)
 
 	command <<<
 		set -euo pipefail
