@@ -148,8 +148,8 @@ task run_hiphase {
 	output {
 		Array[File] phased_vcfs = phased_vcf_names
 		Array[File] phased_vcf_indices = phased_vcf_index_names
-		Array[File] haplotagged_bams = glob("*.haplotagged.bam")
-		Array[File] haplotagged_bam_indices = glob("*.haplotagged.bam.bai")
+		Array[File] haplotagged_bams = haplotagged_bam_names
+		Array[File] haplotagged_bam_indices = haplotagged_bam_index_names
 		File hiphase_stats = "~{id}.~{refname}.hiphase.stats.tsv"
 		File hiphase_blocks = "~{id}.~{refname}.hiphase.blocks.tsv"
 		File? hiphase_haplotags = "~{id}.~{refname}.hiphase.haplotags.tsv"
