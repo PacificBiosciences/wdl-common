@@ -111,7 +111,7 @@ task pangu_cyp2d6 {
     }
 
     runtime {
-        docker: "~{runtime_attributes.container_registry}/pangu@sha256:477dfa87eb98f54708dad3b20cab24ea1a171886b0b2b9d436b3ffc4e899b908"
+        docker: "~{runtime_attributes.container_registry}/pangu@sha256:e2039d1c469ac84983a835ae513526dd6f1802217536a5bd31febee39faf2060"
         cpu: 2
         memory: "12 GB"
         disk: disk_size + " GB"
@@ -210,7 +210,7 @@ task filter_preprocessed_vcf {
     }
 
     runtime {
-        docker: "~{runtime_attributes.container_registry}/samtools@sha256:a843074b9be9505e6e6e93385975f761617fcce4c486fcebf97ab65075ed6bd4"
+        docker: "~{runtime_attributes.container_registry}/samtools@sha256:800b91a772bdd68f6682e48f656b4f48274af3bcc2048d245df6602ba0a664d5"
         cpu: 2
         memory: "4 GB"
         disk: disk_size + " GB"
