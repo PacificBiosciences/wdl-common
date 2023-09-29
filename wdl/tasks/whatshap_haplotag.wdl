@@ -52,7 +52,7 @@ task whatshap_haplotag {
 	}
 
 	runtime {
-		docker: "~{runtime_attributes.container_registry}/whatshap@sha256:34957019d127e9c9c888a38061b28af8c1a42ec9e131bf1b806f70c6e96a1fca"
+		docker: "~{runtime_attributes.container_registry}/whatshap@sha256:cf889352d7b5b977e70bd6386f36017006c093d5f6fffca4c8ee8eeda4d10b95"
 		cpu: threads
 		memory: "4 GB"
 		disk: disk_size + " GB"
