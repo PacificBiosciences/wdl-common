@@ -35,7 +35,7 @@ task pbsv_call {
 		# Build a pattern to match; we want headers (e.g., '^#') and signature
 		#   records where third column matches the chromosome (e.g., '^.\t.\tchr1\t').
 		pattern=$(echo ~{sep=" " regions} \
-			| sed 's/^/^.\\t.\\t/; s/ /\\t\|^.\\t.\\t/; s/$/\\t/' \
+			| sed 's/^/^.\\t.\\t/; s/ /\\t\|^.\\t.\\t/g; s/$/\\t/' \
 			| echo "^#|""$(</dev/stdin)")
 
 		for svsig in ~{sep=" " svsigs}; do
@@ -56,10 +56,19 @@ task pbsv_call {
 			~{reference} \
 			svsigs.fofn \
 			"~{sample_id}.~{reference_name}.pbsv.vcf"
+
+		bgzip --version
+		
+		bgzip "~{sample_id}.~{reference_name}.pbsv.vcf"
+
+		tabix --version
+
+		tabix -p vcf "~{sample_id}.~{reference_name}.pbsv.vcf.gz"
 	>>>
 
 	output {
-		File pbsv_vcf = "~{sample_id}.~{reference_name}.pbsv.vcf"
+		File pbsv_vcf = "~{sample_id}.~{reference_name}.pbsv.vcf.gz"
+		File pbsv_vcf_index = "~{sample_id}.~{reference_name}.pbsv.vcf.gz.tbi"
 	}
 
 	runtime {

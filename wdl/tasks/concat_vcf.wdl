@@ -7,6 +7,7 @@ import "../structs.wdl"
 task concat_vcf {
 	input {
 		Array[File] vcfs
+		Array[File] vcf_indices
 
 		String output_vcf_name
 
@@ -24,17 +25,16 @@ task concat_vcf {
 		bcftools concat \
 			--allow-overlaps \
 			--threads ~{threads - 1} \
-			--output-type b \
-			~{sep=' ' vcfs} \
-		| bcftools sort \
-			--max-mem 4G \
 			--output-type z \
 			--output ~{output_vcf_name} \
-			/dev/stdin
+			~{sep=' ' vcfs}
+
+		bcftools index --tbi ~{output_vcf_name}
 	>>>
 
 	output {
 		File concatenated_vcf = "~{output_vcf_name}"
+		File concatenated_vcf_index = "~{output_vcf_name}.tbi"
 	}
 
 	runtime {
