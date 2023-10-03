@@ -31,11 +31,11 @@ task pbsv_call {
 		#   if an svsig.gz file doesn't contain any signatures in the region, then
 		#   pbsv crashes. To avoid this, filter the svsig.gz files to only contain
 		#   signatures in the regions.
-		# this is brittle and likely to break if pbsv discover changes output format.
-		# build a pattern to match; we want headers (e.g., '^#') and signature
-		#   records where third column matches the chromosome (e.g., '^.\t.\tCHR\t')
+		# This is brittle and likely to break if pbsv discover changes output format.
+		# Build a pattern to match; we want headers (e.g., '^#') and signature
+		#   records where third column matches the chromosome (e.g., '^.\t.\tchr1\t').
 		pattern=$(echo ~{sep=" " regions} \
-			| sed 's!^!^.\\t.\\t!;s! !\\t\|^.\\t.\\t!;s!$!\\t!' \
+			| sed 's/^/^.\\t.\\t/; s/ /\\t\|^.\\t.\\t/; s/$/\\t/' \
 			| echo "^#|""$(</dev/stdin)")
 
 		for svsig in ~{sep=" " svsigs}; do
