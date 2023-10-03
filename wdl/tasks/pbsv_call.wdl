@@ -59,7 +59,7 @@ task pbsv_call {
 	>>>
 
 	output {
-		Array[File] pbsv_vcf = glob("~{sample_id}.~{reference_name}.pbsv.vcf")
+		File pbsv_vcf = "~{sample_id}.~{reference_name}.pbsv.vcf"
 	}
 
 	runtime {
