@@ -22,6 +22,7 @@ task concat_vcf {
 		bcftools --version
 
 		bcftools concat \
+			--allow-overlaps \
 			--threads ~{threads - 1} \
 			--output-type b \
 			~{sep=' ' vcfs} \
