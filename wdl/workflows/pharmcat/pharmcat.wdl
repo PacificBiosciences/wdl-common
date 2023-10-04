@@ -65,9 +65,10 @@ workflow pharmcat {
 	}
 
 	parameter_meta {
-		sample_data: {help: "Array of pairs mapping sample ID to aligned bam, haplotagged bam, gvcf, and phased VCF files for the sample"}
-		reference: {help: "Reference genome data"}
-		pharmcat_positions: {help: "VCF file and index specifying pharmact positions"}
+		haplotagged_bam: {help: "Haplotagged BAM and index"}
+		phased_vcf: {help: "Phased VCF and index"}
+		reference: {help: "Reference genome fasta and index"}
+		pharmcat_positions: {help: "VCF file and index specifying Pharmcat positions"}
 		pharmcat_min_coverage: {help: "Minimum coverage cutoff used to filter the preprocessed VCF passed to pharmcat"}
 		default_runtime_attributes: {help: "Default RuntimeAttributes; spot if preemptible was set to true, otherwise on_demand"}
 	}
