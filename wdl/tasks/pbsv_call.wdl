@@ -14,7 +14,7 @@ task pbsv_call {
 		File reference_index
 		String reference_name
 
-		Array[String] regions
+		Array[String]? regions
 
 		Int mem_gb = if select_first([sample_count, 1]) > 3 then 96 else 64
 
@@ -27,6 +27,7 @@ task pbsv_call {
 	command <<<
 		set -euo pipefail
 
+		if ~{defined(regions)}; then
 		# pbsv has the ability to call SVs by region by using indexed signatures, but
 		#   if an svsig.gz file doesn't contain any signatures in the region, then
 		#   pbsv crashes. To avoid this, filter the svsig.gz files to only contain
@@ -34,17 +35,20 @@ task pbsv_call {
 		# This is brittle and likely to break if pbsv discover changes output format.
 		# Build a pattern to match; we want headers (e.g., '^#') and signature
 		#   records where third column matches the chromosome (e.g., '^.\t.\tchr1\t').
-		pattern=$(echo ~{sep=" " regions} \
-			| sed 's/^/^.\\t.\\t/; s/ /\\t\|^.\\t.\\t/g; s/$/\\t/' \
-			| echo "^#|""$(</dev/stdin)")
+			pattern=$(echo ~{sep=" " regions} \
+				| sed 's/^/^.\\t.\\t/; s/ /\\t\|^.\\t.\\t/g; s/$/\\t/' \
+				| echo "^#|""$(</dev/stdin)")
 
-		for svsig in ~{sep=" " svsigs}; do
-			svsig_basename=$(basename "$svsig" .svsig.gz)
-			gunzip -c "$svsig" \
-				| grep -P "$pattern" \
-				| bgzip -c > "${svsig_basename}.regions.svsig.gz" \
-				&& echo "${svsig_basename}.regions.svsig.gz" >> svsigs.fofn
-		done
+			for svsig in ~{sep=" " svsigs}; do
+				svsig_basename=$(basename "$svsig" .svsig.gz)
+				gunzip -c "$svsig" \
+					| grep -P "$pattern" \
+					| bgzip -c > "${svsig_basename}.regions.svsig.gz" \
+					&& echo "${svsig_basename}.regions.svsig.gz" >> svsigs.fofn
+			done
+		else
+			echo ~{sep="\n" svsigs} > svsigs.fofn
+		fi
 
 		pbsv --version
 
