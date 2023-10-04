@@ -47,7 +47,7 @@ task pbsv_call {
 					&& echo "${svsig_basename}.regions.svsig.gz" >> svsigs.fofn
 			done
 		else
-			echo ~{sep="\n" svsigs} > svsigs.fofn
+			cp ~{write_lines(svsigs)} svsigs.fofn
 		fi
 
 		pbsv --version
