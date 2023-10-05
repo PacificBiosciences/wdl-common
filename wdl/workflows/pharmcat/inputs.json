@@ -12,6 +12,7 @@
     "data": "File",
     "data_index": "File"
   },
+  "pharmcat.pangu_mode": "String (optional, default = \"capture\")",
   "pharmcat.pharmcat_positions": {
     "data": "File",
     "data_index": "File"

@@ -9,6 +9,8 @@ workflow pharmcat {
 
 		IndexData reference
 
+		String pangu_mode = "capture"
+
 		IndexData pharmcat_positions
 		Int pharmcat_min_coverage
 
@@ -19,6 +21,7 @@ workflow pharmcat {
 		input:
 			haplotagged_bam = haplotagged_bam.data,
 			haplotagged_bam_index = haplotagged_bam.data_index,
+			mode = pangu_mode,
 			runtime_attributes = default_runtime_attributes
 	}
 
@@ -68,6 +71,7 @@ workflow pharmcat {
 		haplotagged_bam: {help: "Haplotagged BAM and index"}
 		phased_vcf: {help: "Phased VCF and index"}
 		reference: {help: "Reference genome fasta and index"}
+		pangu_mode: {help: "Input type for pangu [\"wgs\", \"amplicon\", \"capture\" , \"consensus\"] (default = \"capture\")"}
 		pharmcat_positions: {help: "VCF file and index specifying Pharmcat positions"}
 		pharmcat_min_coverage: {help: "Minimum coverage cutoff used to filter the preprocessed VCF passed to pharmcat"}
 		default_runtime_attributes: {help: "Default RuntimeAttributes; spot if preemptible was set to true, otherwise on_demand"}
@@ -80,6 +84,8 @@ task pangu_cyp2d6 {
 		File haplotagged_bam
 		File haplotagged_bam_index
 
+		String mode
+
 		RuntimeAttributes runtime_attributes
 	}
 
@@ -90,7 +96,7 @@ task pangu_cyp2d6 {
 		set -euo pipefail
 
 		pangu \
-			-m capture \
+			-m ~{mode} \
 			-p ~{haplotagged_bam_basename}.pangu \
 			~{haplotagged_bam}
 
@@ -108,7 +114,7 @@ task pangu_cyp2d6 {
 	}
 
 	runtime {
-		docker: "~{runtime_attributes.container_registry}/pangu@sha256:03b959cb584414133e777743efa2feb83b9060d6527e806ef7439a6b312ee14a"
+		docker: "~{runtime_attributes.container_registry}/pangu@sha256:4d7d121280f6c30a6281ca7668530a5b129ee1f12cf561545caadeb2df1b83a8"
 		cpu: 2
 		memory: "12 GB"
 		disk: disk_size + " GB"
