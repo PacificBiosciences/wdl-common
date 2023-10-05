@@ -108,7 +108,7 @@ task pangu_cyp2d6 {
 	}
 
 	runtime {
-		docker: "~{runtime_attributes.container_registry}/pangu@sha256:e2039d1c469ac84983a835ae513526dd6f1802217536a5bd31febee39faf2060"
+		docker: "~{runtime_attributes.container_registry}/pangu@sha256:03b959cb584414133e777743efa2feb83b9060d6527e806ef7439a6b312ee14a"
 		cpu: 2
 		memory: "12 GB"
 		disk: disk_size + " GB"
