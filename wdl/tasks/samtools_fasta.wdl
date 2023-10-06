@@ -31,7 +31,7 @@ task samtools_fasta {
 	}
 
 	runtime {
-		docker: "~{runtime_attributes.container_registry}/samtools@sha256:83ca955c4a83f72f2cc229f41450eea00e73333686f3ed76f9f4984a985c85bb"
+		docker: "~{runtime_attributes.container_registry}/samtools@sha256:cbe496e16773d4ad6f2eec4bd1b76ff142795d160f9dd418318f7162dcdaa685"
 		cpu: threads
 		memory: "4 GB"
 		disk: disk_size + " GB"

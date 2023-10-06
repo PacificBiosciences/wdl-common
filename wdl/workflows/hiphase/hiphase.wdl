@@ -148,15 +148,15 @@ task run_hiphase {
 	output {
 		Array[File] phased_vcfs = phased_vcf_names
 		Array[File] phased_vcf_indices = phased_vcf_index_names
-		Array[File] haplotagged_bams = glob("*.haplotagged.bam")
-		Array[File] haplotagged_bam_indices = glob("*.haplotagged.bam.bai")
+		Array[File] haplotagged_bams = haplotagged_bam_names
+		Array[File] haplotagged_bam_indices = haplotagged_bam_index_names
 		File hiphase_stats = "~{id}.~{refname}.hiphase.stats.tsv"
 		File hiphase_blocks = "~{id}.~{refname}.hiphase.blocks.tsv"
 		File? hiphase_haplotags = "~{id}.~{refname}.hiphase.haplotags.tsv"
 	}
 
 	runtime {
-		docker: "~{runtime_attributes.container_registry}/hiphase@sha256:cff9b39de9c2145714704f6e12a1f5ddf227e40d2efd554e6cfc4a0e698cd4f6"
+		docker: "~{runtime_attributes.container_registry}/hiphase@sha256:c09ec4d70568593098bf877475d15a4cd8e46b5173b91b07ac98c4518817341f"
 		cpu: threads
 		memory: mem_gb + " GB"
 		disk: disk_size + " GB"
