@@ -14,6 +14,7 @@ task pbsv_call {
 		File reference_index
 		String reference_name
 
+		Int? shard_index
 		Array[String]? regions
 
 		Int mem_gb = if select_first([sample_count, 1]) > 3 then 96 else 64
@@ -23,6 +24,8 @@ task pbsv_call {
 
 	Int threads = 8
 	Int disk_size = ceil((size(svsigs, "GB") + size(reference, "GB")) * 2 + 20)
+	String shard = if defined(shard_index) then "." + shard_index else ""
+	String output_basename = "~{sample_id}.~{reference_name}~{shard}.pbsv"
 
 	command <<<
 		set -euo pipefail
@@ -59,20 +62,20 @@ task pbsv_call {
 			--num-threads ~{threads} \
 			~{reference} \
 			svsigs.fofn \
-			"~{sample_id}.~{reference_name}.pbsv.vcf"
+			"~{output_basename}.vcf"
 
 		bgzip --version
 		
-		bgzip "~{sample_id}.~{reference_name}.pbsv.vcf"
+		bgzip "~{output_basename}.vcf"
 
 		tabix --version
 
-		tabix -p vcf "~{sample_id}.~{reference_name}.pbsv.vcf.gz"
+		tabix -p vcf "~{output_basename}.vcf.gz"
 	>>>
 
 	output {
-		File pbsv_vcf = "~{sample_id}.~{reference_name}.pbsv.vcf.gz"
-		File pbsv_vcf_index = "~{sample_id}.~{reference_name}.pbsv.vcf.gz.tbi"
+		File pbsv_vcf = "~{output_basename}.vcf.gz"
+		File pbsv_vcf_index = "~{output_basename}.vcf.gz.tbi"
 	}
 
 	runtime {
