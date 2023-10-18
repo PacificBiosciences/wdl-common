@@ -20,6 +20,13 @@ task concat_vcf {
 	command <<<
 		set -euo pipefail
 
+		mkdir vcfs
+		while read -r input || [[ -n "${input}" ]]; do
+			ln -s "${input}" vcfs
+		done < ~{write_lines(flatten([vcfs,vcf_indices]))}
+
+		find vcfs -type f -name "*.vcf.gz" > vcf.list
+
 		bcftools --version
 
 		bcftools concat \
@@ -27,7 +34,7 @@ task concat_vcf {
 			--threads ~{threads - 1} \
 			--output-type z \
 			--output ~{output_vcf_name} \
-			~{sep=' ' vcfs}
+			--file-list vcf.list
 
 		bcftools index --tbi ~{output_vcf_name}
 	>>>

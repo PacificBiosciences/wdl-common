@@ -24,7 +24,7 @@ task pbsv_call {
 
 	Int threads = 8
 	Int disk_size = ceil((size(svsigs, "GB") + size(reference, "GB")) * 2 + 20)
-	String shard = if defined(shard_index) then "." + shard_index else ""
+	String shard = if defined(shard_index) then ".~{select_first([shard_index])}" else ""
 	String output_basename = "~{sample_id}.~{reference_name}~{shard}.pbsv"
 
 	command <<<
