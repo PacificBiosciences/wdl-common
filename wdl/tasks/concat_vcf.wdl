@@ -25,7 +25,7 @@ task concat_vcf {
 			ln -s "${input}" vcfs
 		done < ~{write_lines(flatten([vcfs,vcf_indices]))}
 
-		find vcfs -type f -name "*.vcf.gz" > vcf.list
+		find vcfs -name "*.vcf.gz" > vcf.list
 
 		bcftools --version
 
