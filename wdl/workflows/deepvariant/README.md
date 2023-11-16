@@ -1,6 +1,8 @@
 # Custom models
 
-To prepare a `custom_deepvariant_model_tar`:
+Custom DeepVariant models must match the version of DeepVariant used for calling.
+
+To prepare a `custom_deepvariant_model_tar` input:
 
 ```shell
 # cd into custom model dir
