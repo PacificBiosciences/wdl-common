@@ -149,7 +149,7 @@ task run_hiphase {
 	}
 
 	runtime {
-		docker: "~{runtime_attributes.container_registry}/hiphase@sha256:a273e3fa6128051770c735f8d44aac19ffb26b4d52da5be566557dc743047c38"
+		docker: "~{runtime_attributes.container_registry}/hiphase@sha256:493ed4244608f29d7e2e180af23b20879c71ae3692201a610c7f1f980ee094e8"
 		cpu: threads
 		memory: mem_gb + " GB"
 		disk: disk_size + " GB"
