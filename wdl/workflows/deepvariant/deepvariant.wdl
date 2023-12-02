@@ -251,7 +251,7 @@ task deepvariant_postprocess_variants {
 
 		# TODO: investigate memory req for multiprocessing
 		/opt/deepvariant/bin/postprocess_variants \
-			--cpus 0 \
+			--cpus 1 \
 			--vcf_stats_report=false \
 			--ref ~{reference} \
 			--infile ~{sample_id}.~{reference_name}.call_variants_output.tfrecord.gz \
