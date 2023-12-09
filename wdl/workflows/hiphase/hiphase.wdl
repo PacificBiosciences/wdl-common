@@ -136,13 +136,6 @@ task run_hiphase {
 			--blocks-file ~{id}.~{refname}.hiphase.blocks.tsv \
 			~{haplotags_param} \
 			--global-realignment-cputime 300
-
-		# index phased VCFs
-		bcftools --version
-
-		for phased_vcf in ~{sep=" " phased_vcf_names}; do
-			bcftools index --tbi --threads ~{threads - 1} $phased_vcf
-		done
 	>>>
 
 	output {
@@ -156,7 +149,7 @@ task run_hiphase {
 	}
 
 	runtime {
-		docker: "~{runtime_attributes.container_registry}/hiphase@sha256:c09ec4d70568593098bf877475d15a4cd8e46b5173b91b07ac98c4518817341f"
+		docker: "~{runtime_attributes.container_registry}/hiphase@sha256:493ed4244608f29d7e2e180af23b20879c71ae3692201a610c7f1f980ee094e8"
 		cpu: threads
 		memory: mem_gb + " GB"
 		disk: disk_size + " GB"
