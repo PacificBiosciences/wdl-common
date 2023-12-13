@@ -5,11 +5,6 @@ struct IndexData {
 	File data_index
 }
 
-struct DeepVariantModel {
-	IndexData model
-	File metadata
-}
-
 struct RuntimeAttributes {
 	# The number of times to retry a task that fails due to preemption
 	Int preemptible_tries

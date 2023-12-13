@@ -13,7 +13,7 @@ workflow deepvariant {
 		String reference_name
 
 		String deepvariant_version
-		DeepVariantModel? deepvariant_model
+		File? custom_deepvariant_model_tar
 
 		RuntimeAttributes default_runtime_attributes
 	}
@@ -50,7 +50,7 @@ workflow deepvariant {
 			sample_id = sample_id,
 			reference_name = reference_name,
 			example_tfrecord_tars = deepvariant_make_examples.example_tfrecord_tar,
-			deepvariant_model = deepvariant_model,
+			custom_deepvariant_model_tar = custom_deepvariant_model_tar,
 			total_deepvariant_tasks = total_deepvariant_tasks,
 			deepvariant_version = deepvariant_version,
 			runtime_attributes = default_runtime_attributes
@@ -59,7 +59,7 @@ workflow deepvariant {
 	call deepvariant_postprocess_variants {
 		input:
 			sample_id = sample_id,
-			tfrecord = deepvariant_call_variants.tfrecord,
+			tfrecords_tar = deepvariant_call_variants.tfrecords_tar,
 			nonvariant_site_tfrecord_tars = deepvariant_make_examples.nonvariant_site_tfrecord_tar,
 			reference = reference_fasta.data,
 			reference_index = reference_fasta.data_index,
@@ -79,7 +79,7 @@ workflow deepvariant {
 		aligned_bams: {help: "Bam and index aligned to the reference genome for each movie associated with all samples in the cohort"}
 		reference: {help: "Reference genome data"}
 		deepvariant_version: {help: "Version of deepvariant to use"}
-		deepvariant_model: {help: "Optional deepvariant model file to use"}
+		custom_deepvariant_model_tar: {help: "Optional deepvariant model to use"}
 		default_runtime_attributes: {help: "Default RuntimeAttributes; spot if preemptible was set to true, otherwise on_demand"}
 	}
 }
@@ -166,7 +166,7 @@ task deepvariant_call_variants {
 		String reference_name
 		Array[File] example_tfrecord_tars
 
-		DeepVariantModel? deepvariant_model
+		File? custom_deepvariant_model_tar
 		Int total_deepvariant_tasks
 		String deepvariant_version
 
@@ -183,18 +183,27 @@ task deepvariant_call_variants {
 			tar -zxvf "${tfrecord_tar}"
 		done < ~{write_lines(example_tfrecord_tars)}
 
-		deepvariant_model_path=~{if (defined(deepvariant_model)) then sub(select_first([deepvariant_model]).model.data, "\\.data.*", "") else "/opt/models/pacbio/model.ckpt"}
+		if ~{defined(custom_deepvariant_model_tar)}; then
+			mkdir -p /opt/models/custom
+			tar --no-same-owner -zxvf ~{custom_deepvariant_model_tar} -C /opt/models/custom
+			DEEPVARIANT_MODEL="/opt/models/custom"
+		else
+			DEEPVARIANT_MODEL="/opt/models/pacbio"
+		fi
 
 		echo "DeepVariant version: $VERSION"
+		echo "DeepVariant model: $DEEPVARIANT_MODEL"
 
 		/opt/deepvariant/bin/call_variants \
 			--outfile ~{sample_id}.~{reference_name}.call_variants_output.tfrecord.gz \
 			--examples "example_tfrecords/~{sample_id}.examples.tfrecord@~{total_deepvariant_tasks}.gz" \
-			--checkpoint "${deepvariant_model_path}"
+			--checkpoint "${DEEPVARIANT_MODEL}"
+
+		tar -zcvf ~{sample_id}.~{reference_name}.call_variants_output.tar.gz ~{sample_id}.~{reference_name}.call_variants_output*.tfrecord.gz
 	>>>
 
 	output {
-		File tfrecord = "~{sample_id}.~{reference_name}.call_variants_output.tfrecord.gz"
+		File tfrecords_tar = "~{sample_id}.~{reference_name}.call_variants_output.tar.gz"
 	}
 
 	runtime {
@@ -214,7 +223,7 @@ task deepvariant_call_variants {
 task deepvariant_postprocess_variants {
 	input {
 		String sample_id
-		File tfrecord
+		File tfrecords_tar
 		Array[File] nonvariant_site_tfrecord_tars
 
 		File reference
@@ -227,10 +236,12 @@ task deepvariant_postprocess_variants {
 		RuntimeAttributes runtime_attributes
 	}
 
-	Int disk_size = ceil((size(tfrecord, "GB") + size(reference, "GB") + size(nonvariant_site_tfrecord_tars, "GB")) * 2 + 20)
+	Int disk_size = ceil((size(tfrecords_tar, "GB") + size(reference, "GB") + size(nonvariant_site_tfrecord_tars, "GB")) * 2 + 20)
 
 	command <<<
 		set -euo pipefail
+
+		tar -zxvf "~{tfrecords_tar}"
 
 		while read -r nonvariant_site_tfrecord_tar || [[ -n "${nonvariant_site_tfrecord_tar}" ]]; do
 			tar -zxvf "${nonvariant_site_tfrecord_tar}"
@@ -239,9 +250,10 @@ task deepvariant_postprocess_variants {
 		echo "DeepVariant version: $VERSION"
 
 		/opt/deepvariant/bin/postprocess_variants \
+			--cpus 1 \
 			--vcf_stats_report=false \
 			--ref ~{reference} \
-			--infile ~{tfrecord} \
+			--infile ~{sample_id}.~{reference_name}.call_variants_output.tfrecord.gz \
 			--outfile ~{sample_id}.~{reference_name}.deepvariant.vcf.gz \
 			--nonvariant_site_tfrecord_path "nonvariant_site_tfrecords/~{sample_id}.gvcf.tfrecord@~{total_deepvariant_tasks}.gz" \
 			--gvcf_outfile ~{sample_id}.~{reference_name}.deepvariant.g.vcf.gz
