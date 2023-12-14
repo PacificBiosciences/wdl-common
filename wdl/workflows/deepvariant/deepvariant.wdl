@@ -185,8 +185,8 @@ task deepvariant_call_variants {
 
 		if ~{defined(custom_deepvariant_model_tar)}; then
 			mkdir -p /opt/models/custom
-			tar --no-same-owner -zxvf ~{custom_deepvariant_model_tar} -C /opt/models/custom
-			DEEPVARIANT_MODEL="/opt/models/custom"
+			tar --no-same-owner -zxvf ~{custom_deepvariant_model_tar} -C ./custom_deepvariant_model
+			DEEPVARIANT_MODEL="./custom_deepvariant_model"
 		else
 			DEEPVARIANT_MODEL="/opt/models/pacbio"
 		fi
