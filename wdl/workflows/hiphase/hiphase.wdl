@@ -136,13 +136,6 @@ task run_hiphase {
 			--blocks-file ~{id}.~{refname}.hiphase.blocks.tsv \
 			~{haplotags_param} \
 			--global-realignment-cputime 300
-
-		# index phased VCFs
-		bcftools --version
-
-		for phased_vcf in ~{sep=" " phased_vcf_names}; do
-			bcftools index --tbi --threads ~{threads - 1} $phased_vcf
-		done
 	>>>
 
 	output {

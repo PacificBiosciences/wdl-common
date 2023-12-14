@@ -249,7 +249,6 @@ task deepvariant_postprocess_variants {
 
 		echo "DeepVariant version: $VERSION"
 
-		# TODO: investigate memory req for multiprocessing
 		/opt/deepvariant/bin/postprocess_variants \
 			--cpus 1 \
 			--vcf_stats_report=false \
