@@ -137,8 +137,10 @@ task deepvariant_make_examples {
 				--gvcf nonvariant_site_tfrecords/~{sample_id}.gvcf.tfrecord@~{total_deepvariant_tasks}.gz \
 				--task {}
 
-		tar -zcvf ~{sample_id}.~{task_start_index}.example_tfrecords.tar.gz example_tfrecords
-		tar -zcvf ~{sample_id}.~{task_start_index}.nonvariant_site_tfrecords.tar.gz nonvariant_site_tfrecords
+		tar -zcvf ~{sample_id}.~{task_start_index}.example_tfrecords.tar.gz example_tfrecords \
+			&& rm -rf example_tfrecords
+		tar -zcvf ~{sample_id}.~{task_start_index}.nonvariant_site_tfrecords.tar.gz nonvariant_site_tfrecords \
+			&& rm -rf nonvariant_site_tfrecords
 	>>>
 
 	output {
@@ -184,9 +186,9 @@ task deepvariant_call_variants {
 		done < ~{write_lines(example_tfrecord_tars)}
 
 		if ~{defined(custom_deepvariant_model_tar)}; then
-			mkdir -p /opt/models/custom
-			tar --no-same-owner -zxvf ~{custom_deepvariant_model_tar} -C /opt/models/custom
-			DEEPVARIANT_MODEL="/opt/models/custom"
+			mkdir -p ./custom_deepvariant_model
+			tar --no-same-owner -zxvf ~{custom_deepvariant_model_tar} -C ./custom_deepvariant_model
+			DEEPVARIANT_MODEL="./custom_deepvariant_model"
 		else
 			DEEPVARIANT_MODEL="/opt/models/pacbio"
 		fi
@@ -199,7 +201,10 @@ task deepvariant_call_variants {
 			--examples "example_tfrecords/~{sample_id}.examples.tfrecord@~{total_deepvariant_tasks}.gz" \
 			--checkpoint "${DEEPVARIANT_MODEL}"
 
-		tar -zcvf ~{sample_id}.~{reference_name}.call_variants_output.tar.gz ~{sample_id}.~{reference_name}.call_variants_output*.tfrecord.gz
+		tar -zcvf ~{sample_id}.~{reference_name}.call_variants_output.tar.gz ~{sample_id}.~{reference_name}.call_variants_output*.tfrecord.gz \
+			&& rm ~{sample_id}.~{reference_name}.call_variants_output*.tfrecord.gz \
+			&& rm -rf example_tfrecords \
+			&& rm -rf ./custom_deepvariant_model
 	>>>
 
 	output {
@@ -257,6 +262,9 @@ task deepvariant_postprocess_variants {
 			--outfile ~{sample_id}.~{reference_name}.deepvariant.vcf.gz \
 			--nonvariant_site_tfrecord_path "nonvariant_site_tfrecords/~{sample_id}.gvcf.tfrecord@~{total_deepvariant_tasks}.gz" \
 			--gvcf_outfile ~{sample_id}.~{reference_name}.deepvariant.g.vcf.gz
+
+		rm ~{sample_id}.~{reference_name}.call_variants_output*.tfrecord.gz \
+			&& rm -rf nonvariant_site_tfrecords
 	>>>
 
 	output {
