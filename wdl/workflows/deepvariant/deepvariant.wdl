@@ -137,8 +137,10 @@ task deepvariant_make_examples {
 				--gvcf nonvariant_site_tfrecords/~{sample_id}.gvcf.tfrecord@~{total_deepvariant_tasks}.gz \
 				--task {}
 
-		tar -zcvf ~{sample_id}.~{task_start_index}.example_tfrecords.tar.gz example_tfrecords
-		tar -zcvf ~{sample_id}.~{task_start_index}.nonvariant_site_tfrecords.tar.gz nonvariant_site_tfrecords
+		tar -zcvf ~{sample_id}.~{task_start_index}.example_tfrecords.tar.gz example_tfrecords \
+			&& rm -rf example_tfrecords
+		tar -zcvf ~{sample_id}.~{task_start_index}.nonvariant_site_tfrecords.tar.gz nonvariant_site_tfrecords \
+			&& rm -rf nonvariant_site_tfrecords
 	>>>
 
 	output {
@@ -260,6 +262,9 @@ task deepvariant_postprocess_variants {
 			--outfile ~{sample_id}.~{reference_name}.deepvariant.vcf.gz \
 			--nonvariant_site_tfrecord_path "nonvariant_site_tfrecords/~{sample_id}.gvcf.tfrecord@~{total_deepvariant_tasks}.gz" \
 			--gvcf_outfile ~{sample_id}.~{reference_name}.deepvariant.g.vcf.gz
+
+		rm ~{sample_id}.~{reference_name}.call_variants_output*.tfrecord.gz \
+			&& rm -rf nonvariant_site_tfrecords
 	>>>
 
 	output {
