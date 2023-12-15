@@ -186,7 +186,7 @@ task deepvariant_call_variants {
 		done < ~{write_lines(example_tfrecord_tars)}
 
 		if ~{defined(custom_deepvariant_model_tar)}; then
-			mkdir -p /opt/models/custom
+			mkdir -p ./custom_deepvariant_model
 			tar --no-same-owner -zxvf ~{custom_deepvariant_model_tar} -C ./custom_deepvariant_model
 			DEEPVARIANT_MODEL="./custom_deepvariant_model"
 		else
