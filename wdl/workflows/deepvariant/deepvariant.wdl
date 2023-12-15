@@ -185,8 +185,8 @@ task deepvariant_call_variants {
 
 		if ~{defined(custom_deepvariant_model_tar)}; then
 			mkdir -p /opt/models/custom
-			tar --no-same-owner -zxvf ~{custom_deepvariant_model_tar} -C /opt/models/custom
-			DEEPVARIANT_MODEL="/opt/models/custom"
+			tar --no-same-owner -zxvf ~{custom_deepvariant_model_tar} -C ./custom_deepvariant_model
+			DEEPVARIANT_MODEL="./custom_deepvariant_model"
 		else
 			DEEPVARIANT_MODEL="/opt/models/pacbio"
 		fi
@@ -199,7 +199,10 @@ task deepvariant_call_variants {
 			--examples "example_tfrecords/~{sample_id}.examples.tfrecord@~{total_deepvariant_tasks}.gz" \
 			--checkpoint "${DEEPVARIANT_MODEL}"
 
-		tar -zcvf ~{sample_id}.~{reference_name}.call_variants_output.tar.gz ~{sample_id}.~{reference_name}.call_variants_output*.tfrecord.gz
+		tar -zcvf ~{sample_id}.~{reference_name}.call_variants_output.tar.gz ~{sample_id}.~{reference_name}.call_variants_output*.tfrecord.gz \
+			&& rm ~{sample_id}.~{reference_name}.call_variants_output*.tfrecord.gz \
+			&& rm -rf example_tfrecords \
+			&& rm -rf ./custom_deepvariant_model
 	>>>
 
 	output {
