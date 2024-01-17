@@ -115,7 +115,7 @@ task run_hiphase {
 	# to handle single samples with very high depth, we had to increase memory to 3*gpu
 	# to handle cohorts with very high depth, we had to increase memory to 4*gpu
 	Int threads = 16
-	Int mem_gb = threads * 4
+	Int mem_gb = threads * 4 + 8
 	Int disk_size = ceil(size(vcfs, "GB") + size(reference, "GB") + size(bams, "GB") * 2 + 20)
 	String haplotags_param = if length(haplotagged_bam_names) > 0 then "--haplotag-file ~{id}.~{refname}.hiphase.haplotags.tsv" else ""
 
