@@ -32,12 +32,18 @@ workflow hiphase {
 	}
 
 	# for samples, haplotag BAMs
-	if (haplotag) {
+	if (haplotag &&  length(sample_ids) > 1) {
 		scatter (bam_object in bams) {
 			# generate an array of haplotagged BAM names that match the input BAMs
 			String haplotagged_bam_name = basename(bam_object.data, ".bam") + ".haplotagged.bam"
 			String haplotagged_bam_index_name = basename(bam_object.data, ".bam") + ".haplotagged.bam.bai"
 		}
+	}
+
+	if (haplotag && length(sample_ids) == 1) {
+		# if there's only one sample, normalize the name
+		Array[String] single_haplotagged_bam_name = ["~{id}.~{refname}.haplotagged.bam"]
+		Array[String] single_haplotagged_bam_index_name = ["~{id}.~{refname}.haplotagged.bam.bai"]
 	}
 
 	call run_hiphase {
@@ -51,8 +57,8 @@ workflow hiphase {
 			phased_vcf_index_names = phased_vcf_index_name,
 			bams = bam,
 			bam_indices = bam_index,
-			haplotagged_bam_names = select_first([haplotagged_bam_name, []]),
-			haplotagged_bam_index_names = select_first([haplotagged_bam_index_name, []]),
+			haplotagged_bam_names = select_first([haplotagged_bam_name, single_haplotagged_bam_name, []]),
+			haplotagged_bam_index_names = select_first([haplotagged_bam_index_name, single_haplotagged_bam_index_name, []]),
 			reference = reference_fasta.data,
 			reference_index = reference_fasta.data_index,
 			runtime_attributes = default_runtime_attributes
@@ -115,7 +121,7 @@ task run_hiphase {
 	# to handle single samples with very high depth, we had to increase memory to 3*gpu
 	# to handle cohorts with very high depth, we had to increase memory to 4*gpu
 	Int threads = 16
-	Int mem_gb = threads * 4
+	Int mem_gb = threads * 4 + 8
 	Int disk_size = ceil(size(vcfs, "GB") + size(reference, "GB") + size(bams, "GB") * 2 + 20)
 	String haplotags_param = if length(haplotagged_bam_names) > 0 then "--haplotag-file ~{id}.~{refname}.hiphase.haplotags.tsv" else ""
 
@@ -149,7 +155,7 @@ task run_hiphase {
 	}
 
 	runtime {
-		docker: "~{runtime_attributes.container_registry}/hiphase@sha256:493ed4244608f29d7e2e180af23b20879c71ae3692201a610c7f1f980ee094e8"
+		docker: "~{runtime_attributes.container_registry}/hiphase@sha256:c46c8493be8b308c0433441cbafcc1b6ac999dfa6e85001d466ebd551c4a8cf0"
 		cpu: threads
 		memory: mem_gb + " GB"
 		disk: disk_size + " GB"
