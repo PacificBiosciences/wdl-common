@@ -48,6 +48,9 @@ task glnexus {
 		tabix --version
 
 		tabix ~{cohort_id}.~{reference_name}.deepvariant.glnexus.vcf.gz
+
+		rm -rf ~{cohort_id}.~{reference_name}.GLnexus.DB
+		rm -rf ~{cohort_id}.~{reference_name}.deepvariant.glnexus.bcf
 	>>>
 
 	output {
