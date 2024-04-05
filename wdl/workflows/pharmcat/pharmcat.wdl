@@ -213,7 +213,7 @@ task filter_preprocessed_vcf {
 	}
 
 	runtime {
-		docker: "~{runtime_attributes.container_registry}/samtools@sha256:cbe496e16773d4ad6f2eec4bd1b76ff142795d160f9dd418318f7162dcdaa685"
+		docker: "~{runtime_attributes.container_registry}/bedtools@sha256:f9f6ba24ebd61dbe02898097de44486691e0a337c6fd6e26f440fed5d798e321"
 		cpu: 2
 		memory: "4 GB"
 		disk: disk_size + " GB"
