@@ -6,8 +6,10 @@ workflow pharmcat {
 	input {
 		IndexData haplotagged_bam
 		IndexData phased_vcf
-
+	
 		IndexData reference
+
+		File? optional_tsv
 
 		String pangu_mode = "capture"
 
@@ -24,6 +26,17 @@ workflow pharmcat {
 			mode = pangu_mode,
 			runtime_attributes = default_runtime_attributes
 	}
+
+    if (defined(optional_tsv)) {
+        call merge_tsvs {
+            input:
+                pangu_tsv = pangu_cyp2d6.pangu_tsv,
+				optional_tsv = optional_tsv,
+                # Other inputs
+				runtime_attributes = default_runtime_attributes
+        }
+    }
+
 
 	call pharmcat_preprocess {
 		input:
@@ -49,7 +62,8 @@ workflow pharmcat {
 	call run_pharmcat {
 		input:
 			preprocessed_filtered_vcf = filter_preprocessed_vcf.filtered_vcf,
-			pangu_tsv = pangu_cyp2d6.fixed_pangu_tsv,
+			input_tsv = select_first([merge_tsvs.merged_tsv, pangu_cyp2d6.fixed_pangu_tsv]),
+#			pangu_tsv = select_first([pangu_cyp2d6.fixed_pangu_tsv,
 			runtime_attributes = default_runtime_attributes
 	}
 
@@ -114,7 +128,7 @@ task pangu_cyp2d6 {
 	}
 
 	runtime {
-		docker: "~{runtime_attributes.container_registry}/pangu@sha256:4d7d121280f6c30a6281ca7668530a5b129ee1f12cf561545caadeb2df1b83a8"
+		docker: "~{runtime_attributes.container_registry}/pangu@sha256:54c53c4865b367d21a09ebe2025181d272b1b05fbcd7459ea1449e4cb51d6ee2"
 		cpu: 2
 		memory: "12 GB"
 		disk: disk_size + " GB"
@@ -213,7 +227,7 @@ task filter_preprocessed_vcf {
 	}
 
 	runtime {
-		docker: "~{runtime_attributes.container_registry}/samtools@sha256:cbe496e16773d4ad6f2eec4bd1b76ff142795d160f9dd418318f7162dcdaa685"
+		docker: "~{runtime_attributes.container_registry}/bedtools@sha256:f9f6ba24ebd61dbe02898097de44486691e0a337c6fd6e26f440fed5d798e321"
 		cpu: 2
 		memory: "4 GB"
 		disk: disk_size + " GB"
@@ -230,7 +244,7 @@ task filter_preprocessed_vcf {
 task run_pharmcat {
 	input {
 		File preprocessed_filtered_vcf
-		File pangu_tsv
+		File input_tsv
 
 		RuntimeAttributes runtime_attributes
 	}
@@ -245,7 +259,7 @@ task run_pharmcat {
 		/pharmcat/pharmcat \
 			-vcf ~{preprocessed_filtered_vcf} \
 			-reporterJson \
-			-po ~{pangu_tsv} \
+			-po ~{input_tsv} \
 			-o .
 	>>>
 
@@ -258,6 +272,43 @@ task run_pharmcat {
 
 	runtime {
 		docker: "pgkb/pharmcat:2.3.0"
+		cpu: 2
+		memory: "4 GB"
+		disk: disk_size + " GB"
+		disks: "local-disk " + disk_size + " HDD"
+		preemptible: runtime_attributes.preemptible_tries
+		maxRetries: runtime_attributes.max_retries
+		awsBatchRetryAttempts: runtime_attributes.max_retries
+		queueArn: runtime_attributes.queue_arn
+		zones: runtime_attributes.zones
+	}
+}
+
+task merge_tsvs {
+	input {
+		File pangu_tsv
+		File? optional_tsv
+
+		RuntimeAttributes runtime_attributes
+	}
+
+	Int disk_size = ceil((size(pangu_tsv, "GB") + size(optional_tsv, "GB")) * 2 + 20)
+	
+	command <<<
+		set -euo pipefail
+
+		awk 'BEGIN {{OFS="\t"}} !($2 ~ /\//) {{$2=$2"/[]"}} 1' ~{pangu_tsv} > fixed_pangu.tsv
+		
+		cat fixed_pangu.tsv ~{optional_tsv} | sort -t$'\t' -k1,1 >merged.tsv
+
+	>>>
+
+	output {
+		File merged_tsv = "merged.tsv"
+	}
+
+	runtime {
+		docker: "~{runtime_attributes.container_registry}/python@sha256:e4d921e252c3c19fe64097aa619c369c50cc862768d5fcb5e19d2877c55cfdd2"
 		cpu: 2
 		memory: "4 GB"
 		disk: disk_size + " GB"
