@@ -52,7 +52,7 @@ task pbmm2_align_wgs {
 
   Int threads   = 24
   Int mem_gb    = ceil(threads * 4)
-  Int disk_size = ceil((size(bam, "GB") + size(ref_fasta, "GB")) * 4 + 20)
+  Int disk_size = ceil((size(bam, "GB") + size(ref_fasta, "GB")) * 4 + 20) # TODO: reduce this
 
   command <<<
     set -euo pipefail
@@ -71,24 +71,33 @@ task pbmm2_align_wgs {
       ~{bam} \
       ~{sample_id}.~{movie}.~{ref_name}.aligned.bam &
 
-    # movie stats
-    extract_read_length_and_qual.py \
-      ~{bam} \
-    > ~{sample_id}.~{movie}.read_length_and_quality.tsv
+    cat << EOF > extract_read_length_and_qual.py
+    import math, pysam
+    MAX_QV = 60
+    save = pysam.set_verbosity(0)  # suppress [E::idx_find_and_load]
+    bamin = pysam.AlignmentFile('~{bam}', check_sq=False)
+    pysam.set_verbosity(save)  # restore warnings
+    for b in bamin:
+      errorrate = 1.0 - b.get_tag("rq")
+      readqv = MAX_QV if errorrate == 0 else math.floor(-10 * math.log10(errorrate))
+      print(f"{b.query_name.split('/')[0]}\t{b.query_name}\t{len(b.query_sequence)}\t{readqv}")
+    bamin.close()
+    EOF
 
-    gzip ~{sample_id}.~{movie}.read_length_and_quality.tsv
+    # movie stats
+    python3 ./extract_read_length_and_qual.py | gzip -c > ~{sample_id}.~{movie}.read_length_and_quality.tsv.gz
 
     wait
   >>>
 
   output {
-    File aligned_bam          = "~{sample_id}.~{movie}.~{ref_name}.aligned.bam"
-    File aligned_bam_index    = "~{sample_id}.~{movie}.~{ref_name}.aligned.bam.bai"
-    File bam_stats            = "~{sample_id}.~{movie}.read_length_and_quality.tsv.gz"
+    File aligned_bam       = "~{sample_id}.~{movie}.~{ref_name}.aligned.bam"
+    File aligned_bam_index = "~{sample_id}.~{movie}.~{ref_name}.aligned.bam.bai"
+    File bam_stats         = "~{sample_id}.~{movie}.read_length_and_quality.tsv.gz"
   }
 
   runtime {
-    docker: "~{runtime_attributes.container_registry}/pbmm2@sha256:ed9dcb4db98c81967fff15f50fca89c8495b1f270eee00e9bec92f46d14d7e2f"
+    docker: "~{runtime_attributes.container_registry}/pbmm2@sha256:2d468bf5197cd992fa459b9f9fde61ba710c58097e0eca752b2cde18ace62ccb"
     cpu: threads
     memory: mem_gb + " GB"
     disk: disk_size + " GB"
