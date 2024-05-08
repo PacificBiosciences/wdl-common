@@ -51,56 +51,57 @@ task glnexus {
   command <<<
     set -euo pipefail
 
-    cat > config.yml << EOF
-unifier_config:
-  min_AQ1: 0
-  min_AQ2: 0
-  min_GQ: 0
-  monoallelic_sites_for_lost_alleles: true
-  max_alleles_per_site: 32
-genotyper_config:
-  required_dp: 1
-  revise_genotypes: false
-  allow_partial_data: true
-  more_PL: true
-  trim_uncalled_alleles: true
-  liftover_fields:
-    - orig_names: [MIN_DP, DP]
-      name: DP
-      description: '##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Approximate read depth (reads with MQ=255 or with bad mates are filtered)">'
-      type: int
-      combi_method: min
-      number: basic
-      count: 1
-      ignore_non_variants: true
-    - orig_names: [AD]
-      name: AD
-      description: '##FORMAT=<ID=AD,Number=R,Type=Integer,Description="Allelic depths for the ref and alt alleles in the order listed">'
-      type: int
-      number: alleles
-      combi_method: min
-      default_type: zero
-      count: 0
-    - orig_names: [GQ]
-      name: GQ
-      description: '##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Genotype Quality">'
-      type: int
-      number: basic
-      combi_method: min
-      count: 1
-      ignore_non_variants: true
-    - orig_names: [PL]
-      name: PL
-      description: '##FORMAT=<ID=PL,Number=G,Type=Integer,Description="Phred-scaled genotype Likelihoods">'
-      type: int
-      number: genotype
-      combi_method: missing
-      count: 0
-      ignore_non_variants: true
-EOF
+    cat << EOF > config.yml
+    unifier_config:
+      min_AQ1: 0
+      min_AQ2: 0
+      min_GQ: 0
+      monoallelic_sites_for_lost_alleles: true
+      max_alleles_per_site: 32
+    genotyper_config:
+      required_dp: 1
+      revise_genotypes: false
+      allow_partial_data: true
+      more_PL: true
+      trim_uncalled_alleles: true
+      liftover_fields:
+        - orig_names: [MIN_DP, DP]
+          name: DP
+          description: '##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Approximate read depth (reads with MQ=255 or with bad mates are filtered)">'
+          type: int
+          combi_method: min
+          number: basic
+          count: 1
+          ignore_non_variants: true
+        - orig_names: [AD]
+          name: AD
+          description: '##FORMAT=<ID=AD,Number=R,Type=Integer,Description="Allelic depths for the ref and alt alleles in the order listed">'
+          type: int
+          number: alleles
+          combi_method: min
+          default_type: zero
+          count: 0
+        - orig_names: [GQ]
+          name: GQ
+          description: '##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Genotype Quality">'
+          type: int
+          number: basic
+          combi_method: min
+          count: 1
+          ignore_non_variants: true
+        - orig_names: [PL]
+          name: PL
+          description: '##FORMAT=<ID=PL,Number=G,Type=Integer,Description="Phred-scaled genotype Likelihoods">'
+          type: int
+          number: genotype
+          combi_method: missing
+          count: 0
+          ignore_non_variants: true
+    EOF
 
     # glneux_cli has no version option
     glnexus_cli --help 2>&1 | grep -Eo 'glnexus_cli release v[0-9a-f.-]+'
+    bcftools --version
 
     glnexus_cli \
       --threads ~{threads} \
@@ -111,18 +112,18 @@ EOF
       ~{sep=" " gvcfs} \
     > ~{cohort_id}.~{ref_name}.deepvariant.glnexus.bcf
 
-    bcftools --version
-
     bcftools view \
-      --threads ~{threads - 1} \
+      ~{if threads > 1 then "--threads " + (threads - 1) else ""} \
       --output-type z \
       --output-file ~{cohort_id}.~{ref_name}.deepvariant.glnexus.vcf.gz \
       ~{cohort_id}.~{ref_name}.deepvariant.glnexus.bcf
 
-    tabix --version
+    bcftools index \
+      ~{if threads > 1 then "--threads " + (threads - 1) else ""} \
+      --tbi \
+      ~{cohort_id}.~{ref_name}.deepvariant.glnexus.vcf.gz
 
-    tabix ~{cohort_id}.~{ref_name}.deepvariant.glnexus.vcf.gz
-
+    # cleanup
     rm -rf ~{cohort_id}.~{ref_name}.GLnexus.DB
     rm -rf ~{cohort_id}.~{ref_name}.deepvariant.glnexus.bcf
   >>>
