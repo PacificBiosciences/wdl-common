@@ -32,12 +32,6 @@ workflow deepvariant {
     ref_name: {
       name: "Reference name"
     }
-    ref_par_regions_bed: {
-      name: "Reference PAR regions BED"
-    }
-    ref_allosomes: {
-      name: "Comma delimited list of allosome names"
-    }
     deepvariant_version: {
       name: "DeepVariant Version"
     }
@@ -66,7 +60,6 @@ workflow deepvariant {
 
   input {
     String sample_id
-    String? sex
     Array[File] aligned_bams
     Array[File] aligned_bam_indices
     File? regions_bed
@@ -74,8 +67,6 @@ workflow deepvariant {
     File ref_fasta
     File ref_index
     String ref_name
-    File? ref_par_regions_bed
-    String? ref_allosomes
 
     String deepvariant_version
     File? custom_deepvariant_model_tar
@@ -89,9 +80,7 @@ workflow deepvariant {
   Int num_shards              = 8
   Int tasks_per_shard         = total_deepvariant_tasks / num_shards
 
-  Boolean adjust_allosome_ploidy = defined(ref_par_regions_bed) && defined(ref_allosomes) && defined(sex) && (sex == "MALE")
-
-  String docker_image = if (default_runtime_attributes.backend == "AWS-HealthOmics") then default_runtime_attributes.container_registry else "google" + "/deepvariant:~{deepvariant_version}"
+  String docker_image = if (default_runtime_attributes.backend == "AWS-OMICS") then default_runtime_attributes.container_registry else "google" + "/deepvariant:~{deepvariant_version}"
 
   scatter (shard_index in range(num_shards)) {
     Int task_start_index = shard_index * tasks_per_shard
@@ -132,11 +121,8 @@ workflow deepvariant {
       ref_fasta                     = ref_fasta,
       ref_index                     = ref_index,
       ref_name                      = ref_name,
-      ref_par_regions_bed           = ref_par_regions_bed,
-      ref_allosomes                 = ref_allosomes,
       total_deepvariant_tasks       = total_deepvariant_tasks,
       docker_image                  = docker_image,
-      adjust_allosome_ploidy        = adjust_allosome_ploidy,
       runtime_attributes            = default_runtime_attributes
   }
 
@@ -405,12 +391,6 @@ task deepvariant_postprocess_variants {
     ref_name: {
       name: "Reference name"
     }
-    ref_par_regions_bed: {
-      name: "Reference PAR regions BED"
-    }
-    ref_allosomes: {
-      name: "Comma delimited list of allosome names"
-    }
     total_deepvariant_tasks: {
       name: "Total DeepVariant tasks"
     }
@@ -442,17 +422,14 @@ task deepvariant_postprocess_variants {
     File ref_fasta
     File ref_index
     String ref_name
-    File? ref_par_regions_bed
-    String? ref_allosomes
 
     Int total_deepvariant_tasks
     String docker_image
 
-    Boolean adjust_allosome_ploidy = false
     RuntimeAttributes runtime_attributes
   }
 
-  Int threads   = 6
+  Int threads   = 2
   Int mem_gb    = 64
   Int disk_size = ceil((size(tfrecords_tar, "GB") + size(ref_fasta, "GB") + size(nonvariant_site_tfrecord_tars, "GB")) * 2 + 20)
 
@@ -476,8 +453,18 @@ task deepvariant_postprocess_variants {
       --nonvariant_site_tfrecord_path "nonvariant_site_tfrecords/~{sample_id}.gvcf.tfrecord@~{total_deepvariant_tasks}.gz" \
       --gvcf_outfile ~{sample_id}.~{ref_name}.small_variants.g.vcf.gz
 
-      # ~{if adjust_allosome_ploidy then "--par_regions_bed " + ref_par_regions_bed else ""} \
-      # ~{if adjust_allosome_ploidy then "--haploid_contigs " + ref_allosomes else ""} \
+    # Filter for only PASS variants
+    bcftools view \
+    ~{if threads > 1 then "--threads " + (threads - 1) else ""} \
+    --apply-filters PASS \
+    --output-type z \
+    --output-file ~{sample_id}.~{ref_name}.small_variants.passing.vcf.gz \
+    ~{sample_id}.~{ref_name}.small_variants.vcf.gz
+
+    mv ~{sample_id}.~{ref_name}.small_variants.passing.vcf.gz ~{sample_id}.~{ref_name}.small_variants.vcf.gz
+    bcftools index --tbi --force \
+      ~{if threads > 1 then "--threads " + (threads - 1) else ""} \
+      ~{sample_id}.~{ref_name}.small_variants.vcf.gz
 
     rm ~{sample_id}.~{ref_name}.call_variants_output*.tfrecord.gz \
       && rm -rf nonvariant_site_tfrecords
