@@ -12,7 +12,7 @@ workflow backend_configuration {
   parameter_meta {
     backend: {
       help: "Backend where the workflow will be executed",
-      choices: ["GCP", "Azure", "AWS-AGC", "AWS-HealthOmics", "HPC"]
+      choices: ["GCP", "Azure", "AWS-AGC", "AWS-OMICS", "HPC"]
     }
     zones: {
       help: "Zones where compute will take place; required if backend is set to 'AWS' or 'GCP'"
@@ -129,8 +129,8 @@ workflow backend_configuration {
     }
   }
 
-  if (backend == "AWS-HealthOmics") {
-    # No distinction between preemptible and on-demand in AWS-HealthOmics configuration
+  if (backend == "AWS-OMICS") {
+    # No distinction between preemptible and on-demand in AWS-OMICS configuration
     # zones must be defined
     # aws_spot_queue_arn must be defined if preemptible is set to true and engine is not miniwdl
     # aws_on_demand_queue_arn must be defined if preemptible is set to false and engine is not miniwdl
