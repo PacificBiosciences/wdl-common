@@ -58,6 +58,7 @@ task bcftools_stats_roh_small_variants {
   }
 
   Int threads   = 2
+  Int mem_gb    = 4
   Int disk_size = ceil(size(vcf, "GB") + size(ref_fasta, "GB") + 20)
 
   command <<<
@@ -67,48 +68,53 @@ task bcftools_stats_roh_small_variants {
 
     bcftools stats \
       ~{if threads > 1 then "--threads " + (threads - 1) else ""} \
-      --apply-filters PASS --samples ~{sample_id} \
+      --samples ~{sample_id} \
       ~{"--fasta-ref " + ref_fasta} \
       ~{vcf} \
     > ~{sample_id}.~{ref_name}.vcf.stats.txt
+
+    # pull some top level stats
+    grep -w '^SN' ~{sample_id}.~{ref_name}.vcf.stats.txt | grep 'number of SNPs:' | cut -f4 > snv_count.txt
+    grep -w '^SN' ~{sample_id}.~{ref_name}.vcf.stats.txt | grep 'number of indels:' | cut -f4 > indel_count.txt
+    grep -w '^TSTV' ~{sample_id}.~{ref_name}.vcf.stats.txt | cut -f5 > tstv_ratio.txt
+    nHets=$(grep -w '^PSC' ~{sample_id}.~{ref_name}.vcf.stats.txt | cut -f6)
+    nNonRefHom=$(grep -w '^PSC' ~{sample_id}.~{ref_name}.vcf.stats.txt | cut -f5)
+    printf %.2f "$((10**2 * nHets / nNonRefHom))e-2" > hethom_ratio.txt  # hack for low precision float without bc
 
     bcftools roh \
       ~{if threads > 1 then "--threads " + (threads - 1) else ""} \
       --AF-dflt 0.4 \
       ~{vcf} \
-    > ~{sample_id}.~{ref_name}.bcftools_roh.out
+      > ~{sample_id}.~{ref_name}.bcftools_roh.out
 
-    # Convert the ROH output to BED format
-    # The output format is: chrom, start, end, qual
-    echo -e "#chr\\tstart\\tend\\tqual" > ~{sample_id}.~{ref_name}.roh.bed
-    awk -v OFS='\t' '$1=="RG" {{ print $3, $4, $5, $8 }}' ~{sample_id}.~{ref_name}.bcftools_roh.out \
-      >> ~{sample_id}.~{ref_name}.roh.bed
+    # convert the roh output to a bed file with no filtering
+    cat << EOF > roh_bed.py
+    with open('~{sample_id}.~{ref_name}.bcftools_roh.out', 'r') as f:
+      lines = f.readlines()
+      print("#chr\tstart\tend\tqual")
+      for line in lines:
+        vals = line.strip().split('\t')
+        if vals[0] == "RG":
+          print('\t'.join([vals[2], vals[3], vals[4], vals[7]]))
+    EOF
 
-    # Extract the counts of SNVs and indels, Ts/Tv ratio, and SNV het/hom ratio from bcftools stats
-    awk -F '\t' '($1=="SN" && $3=="number of SNPs:") {{ print $4 }}' ~{sample_id}.~{ref_name}.vcf.stats.txt \
-      > snv_count.txt || echo 0 > snv_count.txt
-    awk -F '\t' '($1=="SN" && $3=="number of indels:") {{ print $4 }}' ~{sample_id}.~{ref_name}.vcf.stats.txt \
-      > indel_count.txt || echo 0 > indel_count.txt
-    awk -F '\t' '($1=="TSTV") {{ print $5 }}' ~{sample_id}.~{ref_name}.vcf.stats.txt \
-      > tstv_ratio.txt || echo 0 > tstv_ratio.txt
-    awk -F '\t' '($1=="PSC") {{ print $6/$5 }}' ~{sample_id}.~{ref_name}.vcf.stats.txt \
-      > hethom_ratio.txt || echo 0 > hethom_ratio.txt
+    python3 ./roh_bed.py > ~{sample_id}.~{ref_name}.roh.bed
   >>>
 
   output {
     File  stats              = "~{sample_id}.~{ref_name}.vcf.stats.txt"
     File  roh_out            = "~{sample_id}.~{ref_name}.bcftools_roh.out"
     File  roh_bed            = "~{sample_id}.~{ref_name}.roh.bed"
-    Int   stat_SNV_count     = read_int("snv_count.txt")
-    Int   stat_INDEL_count   = read_int("indel_count.txt")
-    Float stat_TSTV_ratio    = read_float("tstv_ratio.txt")
-    Float stat_HETHOM_ratio  = read_float("hethom_ratio.txt")
+    String stat_SNV_count    = read_string("snv_count.txt")
+    String stat_INDEL_count  = read_string("indel_count.txt")
+    String stat_TSTV_ratio   = read_string("tstv_ratio.txt")
+    String stat_HETHOM_ratio = read_string("hethom_ratio.txt")
   }
 
   runtime {
-    docker: "~{runtime_attributes.container_registry}/bcftools@sha256:46720a7ab5feba5be06d5269454a6282deec13060e296f0bc441749f6f26fdec"
+    docker: "~{runtime_attributes.container_registry}/pb_wdl_base@sha256:963c8ef4cd011cd044d5efcff2759aa37b86d0ca5739ce576f60a0ae0967292c"
     cpu: threads
-    memory: "4 GB"
+    memory: mem_gb + " GB"
     disk: disk_size + " GB"
     disks: "local-disk " + disk_size + " HDD"
     preemptible: runtime_attributes.preemptible_tries
@@ -155,6 +161,7 @@ task concat_pbsv_vcf {
   }
 
   Int threads   = 2
+  Int mem_gb    = 4
   Int disk_size = ceil(size(vcfs, "GB") * 2 + 20)
 
   command <<<
@@ -185,9 +192,9 @@ task concat_pbsv_vcf {
   }
 
   runtime {
-    docker: "~{runtime_attributes.container_registry}/bcftools@sha256:36d91d5710397b6d836ff87dd2a924cd02fdf2ea73607f303a8544fbac2e691f"
+    docker: "~{runtime_attributes.container_registry}/pb_wdl_base@sha256:963c8ef4cd011cd044d5efcff2759aa37b86d0ca5739ce576f60a0ae0967292c"
     cpu: threads
-    memory: "4 GB"
+    memory: mem_gb + " GB"
     disk: disk_size + " GB"
     disks: "local-disk " + disk_size + " HDD"
     preemptible: runtime_attributes.preemptible_tries
@@ -243,13 +250,19 @@ task split_vcf_by_sample {
     bcftools --version
 
     for sample_id in ~{sep=" " sample_ids}; do
+      # Extract sample, keeping only passing variants and excluding uncalled genotypes
       bcftools view \
         ~{if threads > 1 then "--threads " + (threads - 1) else ""} \
         --samples ${sample_id} \
+        --exclude-uncalled \
+        --exclude 'GT="ref"' \
+        --trim-alt-alleles \
         --output-type z \
         --output ${sample_id}.~{vcf_basename}.vcf.gz \
         ~{vcf}
-      bcftools index --tbi ${sample_id}.~{vcf_basename}.vcf.gz
+      bcftools index --tbi \
+        ~{if threads > 1 then "--threads " + (threads - 1) else ""} \
+        ${sample_id}.~{vcf_basename}.vcf.gz
       echo ${sample_id}.~{vcf_basename}.vcf.gz >> vcf.list
       echo ${sample_id}.~{vcf_basename}.vcf.gz.tbi >> index.list
     done
@@ -261,7 +274,7 @@ task split_vcf_by_sample {
   }
 
   runtime {
-    docker: "~{runtime_attributes.container_registry}/bcftools@sha256:36d91d5710397b6d836ff87dd2a924cd02fdf2ea73607f303a8544fbac2e691f"
+    docker: "~{runtime_attributes.container_registry}/pb_wdl_base@sha256:963c8ef4cd011cd044d5efcff2759aa37b86d0ca5739ce576f60a0ae0967292c"
     cpu: threads
     memory: "4 GB"
     disk: disk_size + " GB"
@@ -331,7 +344,7 @@ task bcftools_merge {
   }
 
   runtime {
-    docker: "~{runtime_attributes.container_registry}/bcftools@sha256:36d91d5710397b6d836ff87dd2a924cd02fdf2ea73607f303a8544fbac2e691f"
+    docker: "~{runtime_attributes.container_registry}/pb_wdl_base@sha256:963c8ef4cd011cd044d5efcff2759aa37b86d0ca5739ce576f60a0ae0967292c"
     cpu: threads
     memory: "4 GB"
     disk: disk_size + " GB"
@@ -380,39 +393,40 @@ task sv_stats {
   }
 
   Int threads   = 2
+  Int mem_gb    = 4
   Int disk_size = ceil(size(vcf, "GB") + 20)
 
   command <<<
     # Count the number of variants of each type
     bcftools view -H -i 'FILTER="PASS" & ABS(SVLEN)>49 & SVTYPE="DUP"' \
       "~{vcf}" | wc -l \
-      > stat_DUP.txt || echo 0 > stat_DUP.txt
+      > stat_DUP.txt || echo "0" > stat_DUP.txt
     bcftools view -H -i 'FILTER="PASS" & ABS(SVLEN)>49 & SVTYPE="DEL"' \
       "~{vcf}" | wc -l \
-      > stat_DEL.txt || echo 0 > stat_DEL.txt
+      > stat_DEL.txt || echo "0" > stat_DEL.txt
     bcftools view -H -i 'FILTER="PASS" & ABS(SVLEN)>49 & SVTYPE="INS"' \
       "~{vcf}" | wc -l \
-      > stat_INS.txt || echo 0 > stat_INS.txt
+      > stat_INS.txt || echo "0" > stat_INS.txt
     bcftools view -H -i 'FILTER="PASS" & ABS(SVLEN)>49 & SVTYPE="INV"' \
       "~{vcf}" | wc -l \
-      > stat_INV.txt || echo 0 > stat_INV.txt
+      > stat_INV.txt || echo "0" > stat_INV.txt
     bcftools view -H -i 'FILTER="PASS" & SVTYPE="BND"' \
       "~{vcf}" | wc -l \
-      > stat_BND.txt || echo 0 > stat_BND.txt
+      > stat_BND.txt || echo "0" > stat_BND.txt
   >>>
 
   output {
-    Int stat_sv_DUP_count = read_int("stat_DUP.txt")
-    Int stat_sv_DEL_count = read_int("stat_DEL.txt")
-    Int stat_sv_INS_count = read_int("stat_INS.txt")
-    Int stat_sv_INV_count = read_int("stat_INV.txt")
-    Int stat_sv_BND_count = read_int("stat_BND.txt")
+    String stat_sv_DUP_count = read_string("stat_DUP.txt")
+    String stat_sv_DEL_count = read_string("stat_DEL.txt")
+    String stat_sv_INS_count = read_string("stat_INS.txt")
+    String stat_sv_INV_count = read_string("stat_INV.txt")
+    String stat_sv_BND_count = read_string("stat_BND.txt")
   }
 
   runtime {
-    docker: "~{runtime_attributes.container_registry}/bcftools@sha256:36d91d5710397b6d836ff87dd2a924cd02fdf2ea73607f303a8544fbac2e691f"
+    docker: "~{runtime_attributes.container_registry}/pb_wdl_base@sha256:963c8ef4cd011cd044d5efcff2759aa37b86d0ca5739ce576f60a0ae0967292c"
     cpu: threads
-    memory: "4 GB"
+    memory: mem_gb + " GB"
     disk: disk_size + " GB"
     disks: "local-disk " + disk_size + " HDD"
     preemptible: runtime_attributes.preemptible_tries
