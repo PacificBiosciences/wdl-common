@@ -53,7 +53,8 @@ task mosdepth {
   }
 
   Int threads   = 4
-  Int disk_size = ceil(size(aligned_bam, "GB") * 2 + 20)
+  Int mem_gb    = 4
+  Int disk_size = ceil(size(aligned_bam, "GB") + 20)
 
   Float max_norm_female_chrY_depth = 0.1
 
@@ -75,28 +76,39 @@ task mosdepth {
     mv ~{out_prefix}.mosdepth.summary.txt ~{sample_id}.~{ref_name}.mosdepth.summary.txt
     mv ~{out_prefix}.regions.bed.gz ~{sample_id}.~{ref_name}.mosdepth.regions.bed.gz
 
-    awk '($1=="total_region") {{ print $4 }}' \
-      ~{sample_id}.~{ref_name}.mosdepth.summary.txt \
-      > mean_depth.txt || echo 0 > mean_depth.txt
+    cat << EOF > get_mean_depth.py
+    import pandas as pd
+    df = pd.read_csv('~{sample_id}.~{ref_name}.mosdepth.summary.txt', sep='\t')
+    print(df[df['chrom'] == 'total']['mean'].values[0])
+    EOF
 
-    awk -v threshold=~{max_norm_female_chrY_depth} \
-      '$1 ~ /^(chr)?[[:digit:]]{{1,2}}$/ {{ acount+=1; asum+=$4 }}; $1 ~ /^(chr)?Y$/ {{ y=$4 }}; \
-      END {{ y/(asum/acount) > threshold ? sex="MALE" : sex="FEMALE"; print sex }}' \
-      ~{sample_id}.~{ref_name}.mosdepth.summary.txt \
-      > inferred_sex.txt || echo "" > inferred_sex.txt
+    python3 ./get_mean_depth.py > mean_depth.txt || echo "0.0" > mean_depth.txt
+
+    cat << EOF > infer_chrY.py
+    import pandas as pd
+    df = pd.read_csv('~{sample_id}.~{ref_name}.mosdepth.summary.txt', sep='\t')
+    chrA_depth = df[df['chrom'].str.match(r'^(chr)?\d{1,2}$')]['mean'].mean()
+    chrY_depth = df[df['chrom'].str.match(r'^(chr)?Y$')]['mean'].mean()
+    if chrA_depth == 0:
+      print("")
+    else:
+      print("MALE" if chrY_depth/chrA_depth > float(~{max_norm_female_chrY_depth}) else "FEMALE")
+    EOF
+
+    python3 ./infer_chrY.py > inferred_sex.txt || echo "" > inferred_sex.txt
   >>>
 
   output {
     File   summary         = "~{sample_id}.~{ref_name}.mosdepth.summary.txt"
     File   region_bed      = "~{sample_id}.~{ref_name}.mosdepth.regions.bed.gz"
     String inferred_sex    = if (infer_sex) then read_string("inferred_sex.txt") else ""
-    Float  stat_mean_depth = read_float("mean_depth.txt")
+    String stat_mean_depth = read_string("mean_depth.txt")
   }
 
   runtime {
-    docker: "~{runtime_attributes.container_registry}/mosdepth@sha256:35d5e02facf4f38742e5cae9e5fdd3807c2b431dd8d881fd246b55e6d5f7f600"
+    docker: "~{runtime_attributes.container_registry}/mosdepth@sha256:8b89b68f2d3f919ebab404b50dd1bc56803f5260074baae77acfa7e64a3a1f14"
     cpu: threads
-    memory: "4 GB"
+    memory: mem_gb + " GB"
     disk: disk_size + " GB"
     disks: "local-disk " + disk_size + " LOCAL"
     preemptible: runtime_attributes.preemptible_tries
