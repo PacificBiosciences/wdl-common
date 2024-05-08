@@ -114,36 +114,40 @@ task hiphase {
 
     gzip ~{sample_id}.~{ref_name}.hiphase.haplotags.tsv
 
-    samtools idxstats ~{sample_id}.~{ref_name}.haplotagged.bam \
-      | awk '{m+=$3;u+=4};END {print m/(m+u)}' \
+    # pull the fraction of mapped reads
+    samtools flagstat \
+      ~{if threads > 1 then "--threads " + (threads - 1) else ""} \
+      --output-fmt json \
+      ~{sample_id}.~{ref_name}.haplotagged.bam \
+      | jq '.["QC-passed reads"]["primary mapped %"]' \
       > mapped_fraction.txt
-    
-    awk -F '\t' -v SAMPLE="~{sample_id}" \
-      '($1==SAMPLE && $2=="all") {{ print $20 }};' \
-      ~{sample_id}.~{ref_name}.hiphase.stats.tsv \
-      > phased_basepairs.txt
 
-    awk -F '\t' -v SAMPLE="~{sample_id}" \
-      '($1==SAMPLE && $2=="all") {{ print $21 }};' \
-      ~{sample_id}.~{ref_name}.hiphase.stats.tsv \
-      > phase_block_ng50.txt
+    # pull the phased basepairs and phase block N50
+    cat << EOF > get_tsv_stats.py
+    import sys, pandas as pd
+    df = pd.read_csv('~{sample_id}.~{ref_name}.hiphase.stats.tsv', sep='\t')
+    print(df[df['chromosome'] == 'all'][sys.argv[1]].values[0])
+    EOF
+
+    python3 get_tsv_stats.py basepairs_per_block_sum > phased_basepairs.txt
+    python3 get_tsv_stats.py block_ng50 > phase_block_ng50.txt
   >>>
 
   output {
-    Array[File] phased_vcfs        = phased_vcf_names
-    Array[File] phased_vcf_indices = phased_vcf_index_names
-    File  haplotagged_bam          = "~{sample_id}.~{ref_name}.haplotagged.bam"
-    File  haplotagged_bam_index    = "~{sample_id}.~{ref_name}.haplotagged.bam.bai"
-    File  phase_stats              = "~{sample_id}.~{ref_name}.hiphase.stats.tsv"
-    File  phase_blocks             = "~{sample_id}.~{ref_name}.hiphase.blocks.tsv"
-    File  phase_haplotags          = "~{sample_id}.~{ref_name}.hiphase.haplotags.tsv.gz"
-    Int   stat_phased_basepairs    = read_int("phased_basepairs.txt")
-    Int   stat_phase_block_ng50    = read_int("phase_block_ng50.txt")
-    Float stat_mapped_fraction     = read_float("mapped_fraction.txt")
+    Array [File] phased_vcfs        = phased_vcf_names
+    Array [File] phased_vcf_indices = phased_vcf_index_names
+    File   haplotagged_bam          = "~{sample_id}.~{ref_name}.haplotagged.bam"
+    File   haplotagged_bam_index    = "~{sample_id}.~{ref_name}.haplotagged.bam.bai"
+    File   phase_stats              = "~{sample_id}.~{ref_name}.hiphase.stats.tsv"
+    File   phase_blocks             = "~{sample_id}.~{ref_name}.hiphase.blocks.tsv"
+    File   phase_haplotags          = "~{sample_id}.~{ref_name}.hiphase.haplotags.tsv.gz"
+    String stat_phased_basepairs    = read_string("phased_basepairs.txt")
+    String stat_phase_block_ng50    = read_string("phase_block_ng50.txt")
+    String stat_mapped_fraction     = read_string("mapped_fraction.txt")
   }
 
   runtime {
-    docker: "~{runtime_attributes.container_registry}/hiphase@sha256:c46c8493be8b308c0433441cbafcc1b6ac999dfa6e85001d466ebd551c4a8cf0"
+    docker: "~{runtime_attributes.container_registry}/hiphase@sha256:af7de2b54295c56dae6e2e217a5f4fca460104f09c8367cf5395d53ea1c3fe01"
     cpu: threads
     memory: mem_gb + " GB"
     disk: disk_size + " GB"
