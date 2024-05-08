@@ -50,58 +50,107 @@ task merge_bam_stats {
     RuntimeAttributes runtime_attributes
   }
 
-  Int threads = 2
+  Int threads   = 2
+  Int mem_gb    = 4
   Int disk_size = 20
 
   command <<<
     zcat ~{sep = " " bam_stats} > ~{sample_id}.read_length_and_quality.tsv
-    # TODO: add column for movie source, adjust indices
-    awk '{{ b=int($2/1000); b=(b>39?39:b); print 1000*b "\t" $2; }}' \
-      ~{sample_id}.read_length_and_quality.tsv \
-      | sort -k1,1g \
-      | datamash -g 1 count 1 sum 2 \
-      | awk 'BEGIN {{ for(i=0;i<=39;i++) {{ print 1000*i"\t0\t0"; }} }} {{ print; }}' \
-      | sort -k1,1g \
-      | datamash -g 1 sum 2 sum 3 \
-    > ~{sample_id}.read_length_histogram.tsv
 
-    awk '{{ print ($3>50?50:$3) "\t" $2; }}' \
-      ~{sample_id}.read_length_and_quality.tsv \
-      | sort -k1,1g \
-      | datamash -g 1 count 1 sum 2 \
-      | awk 'BEGIN {{ for(i=0;i<=60;i++) {{ print i"\t0\t0"; }} }} {{ print; }}' \
-      | sort -k1,1g \
-      | datamash -g 1 sum 2 sum 3 \
-    > ~{sample_id}.read_quality_histogram.tsv
+    cat << EOF > bin_length.py
+    import sys, pandas as pd
+    df = pd.read_csv(sys.stdin, sep='\t', header=None)
+    # bin by read length, 0-40000, by 1000
+    bins = pd.interval_range(start=0, end=40000, freq=1000, closed='left')
+    df[0] = pd.cut(df[2], bins=bins, labels=bins.left)
+    grouped = df.groupby(0)[2].agg(['count', 'sum'])
+    # print the count and sum of read lengths for each bin
+    for index, row in grouped.iterrows():
+      print(f'{index.left}\t{row["count"]}\t{row["sum"]}')
+    EOF
 
-    datamash count 1 mean 2 median 2 mean 3 median 3 \
+    python3 ./bin_length.py \
+      < ~{sample_id}.read_length_and_quality.tsv \
+      > ~{sample_id}.read_length_histogram.tsv
+
+    cat << EOF > plot_length.py
+    import sys, pandas as pd, seaborn as sns, matplotlib.pyplot as plt
+    df = pd.read_csv(sys.stdin, sep='\t', header=None, names=['read_length', 'count', 'base_pairs'])
+    fig, axs = plt.subplots(1, 1, figsize=(7, 5))
+    sns.histplot(data=df, x='read_length', weights='count', bins=40, ax=axs)
+    axs.set_xlabel('read length (bp)'); axs.set_ylabel('read count')
+    axs.set_title('~{sample_id}')
+    plt.tight_layout()
+    plt.savefig('~{sample_id}.read_length_histogram.png')
+    EOF
+
+    python3 ./plot_length.py < ~{sample_id}.read_length_histogram.tsv
+
+    cat << EOF > bin_quality.py
+    import sys, pandas as pd
+    df = pd.read_csv(sys.stdin, sep='\t', header=None)
+    # bin by quality score, 0-60
+    bins = pd.interval_range(start=0, end=61, freq=1, closed='left')
+    df[0] = pd.cut(df[3], bins=bins, labels=bins.left, include_lowest=True)
+    grouped = df.groupby(0)[2].agg(['count', 'sum'])
+    # print the count and sum of read lengths for each quality score
+    for index, row in grouped.iterrows():
+      print(f'{index.left}\t{row["count"]}\t{row["sum"]}')
+    EOF
+
+    python3 ./bin_quality.py \
+      < ~{sample_id}.read_length_and_quality.tsv \
+      > ~{sample_id}.read_quality_histogram.tsv
+
+    cat << EOF > plot_quality.py
+    import sys, pandas as pd, seaborn as sns, matplotlib.pyplot as plt
+    df = pd.read_csv(sys.stdin, sep='\t', header=None, names=['read_quality', 'count', 'base_pairs'])
+    fig, axs = plt.subplots(1, 1, figsize=(7, 5))
+    sns.histplot(data=df, x='read_quality', weights='count', bins=60, ax=axs)
+    axs.set_xlabel('read quality'); axs.set_ylabel('read count')
+    axs.set_title('~{sample_id}')
+    plt.tight_layout()
+    plt.savefig('~{sample_id}.read_quality_histogram.png')
+    EOF
+
+    python3 ./plot_quality.py < ~{sample_id}.read_quality_histogram.tsv
+
+    cat << EOF > summary_stats.py
+    import sys, pandas as pd
+    df = pd.read_csv(sys.stdin, sep='\t', header=None)
+    print(f'{len(df)}\t{df[2].mean()}\t{df[2].median()}\t{df[3].mean()}\t{df[3].median()}')
+    EOF
+
+    python3 ./summary_stats.py \
       < ~{sample_id}.read_length_and_quality.tsv \
       > stats.txt
 
     cut -f1 stats.txt > num_reads.txt || echo "0" > num_reads.txt
-    cut -f2 stats.txt > read_length_mean.txt || echo "0" > read_length_mean.txt
-    cut -f3 stats.txt > read_length_median.txt || echo "0" > read_length_median.txt
-    cut -f4 stats.txt > read_quality_mean.txt || echo "0" > read_quality_mean.txt
-    cut -f5 stats.txt > read_quality_median.txt || echo "0" > read_quality_median.txt
+    cut -f2 stats.txt > read_length_mean.txt || echo "0.0" > read_length_mean.txt
+    cut -f3 stats.txt > read_length_median.txt || echo "0.0" > read_length_median.txt
+    cut -f4 stats.txt > read_quality_mean.txt || echo "0.0" > read_quality_mean.txt
+    cut -f5 stats.txt > read_quality_median.txt || echo "0.0" > read_quality_median.txt
 
     gzip ~{sample_id}.read_length_and_quality.tsv
   >>>
 
   output {
-    File  read_length_and_quality  = "~{sample_id}.read_length_and_quality.tsv.gz"
-    File  read_length_histogram    = "~{sample_id}.read_length_histogram.tsv"
-    File  read_quality_histogram   = "~{sample_id}.read_quality_histogram.tsv"
-    Int   stat_num_reads           = read_int("num_reads.txt")
-    Float stat_read_length_mean    = read_float("read_length_mean.txt")
-    Float stat_read_length_median  = read_float("read_length_median.txt")
-    Float stat_read_quality_mean   = read_float("read_quality_mean.txt")
-    Float stat_read_quality_median = read_float("read_quality_median.txt")
+    File   read_length_and_quality  = "~{sample_id}.read_length_and_quality.tsv.gz"
+    File   read_length_histogram    = "~{sample_id}.read_length_histogram.tsv"
+    File   read_quality_histogram   = "~{sample_id}.read_quality_histogram.tsv"
+    File   read_length_plot         = "~{sample_id}.read_length_histogram.png"
+    File   read_quality_plot        = "~{sample_id}.read_quality_histogram.png"
+    String stat_num_reads           = read_string("num_reads.txt")
+    String stat_read_length_mean    = read_string("read_length_mean.txt")
+    String stat_read_length_median  = read_string("read_length_median.txt")
+    String stat_read_quality_mean   = read_string("read_quality_mean.txt")
+    String stat_read_quality_median = read_string("read_quality_median.txt")
   }
 
   runtime {
-    docker: "~{runtime_attributes.container_registry}/pbmm2@sha256:ed9dcb4db98c81967fff15f50fca89c8495b1f270eee00e9bec92f46d14d7e2f"
+    docker: "~{runtime_attributes.container_registry}/pb_wdl_base@sha256:963c8ef4cd011cd044d5efcff2759aa37b86d0ca5739ce576f60a0ae0967292c"
     cpu: threads
-    memory: "4 GB"
+    memory: mem_gb + " GB"
     disk: disk_size + " GB"
     disks: "local-disk " + disk_size + " HDD"
     preemptible: runtime_attributes.preemptible_tries
