@@ -107,7 +107,7 @@ task hificnv {
 
   Int threads   = 8
   Int mem_gb    = threads * 2
-  Int disk_size = ceil((size(aligned_bam, "GB") + size(ref_fasta, "GB"))+ 20)
+  Int disk_size = ceil((size(aligned_bam, "GB") + size(ref_fasta, "GB")) + 20)
 
   command <<<
     set -euo pipefail
@@ -115,6 +115,7 @@ task hificnv {
     echo ~{if defined(sex) then "" else "Sex is not defined for ~{sample_id}.  Defaulting to karyotype XX for HiFiCNV."}
 
     hificnv --version
+    bcftools --version
 
     hificnv \
       --threads ~{threads} \
@@ -131,40 +132,56 @@ task hificnv {
     mv hificnv.~{sample_id}.vcf.gz ~{sample_id}.~{ref_name}.hificnv.vcf.gz
     bcftools index --tbi ~{sample_id}.~{ref_name}.hificnv.vcf.gz
 
+    # count the number of CNVs and sum the lengths of CNVs
+    cat << EOF > cnv_stats.py
+    import sys, pandas as pd
+    df = pd.read_csv(sys.stdin, header=None)
+    print(f'{df[0].count()}\t{df[0].sum()}')
+    EOF
+
     bcftools query \
       -i 'FILTER="PASS" & SVTYPE="DUP"' \
       -f '%INFO/SVLEN\n' \
       ~{sample_id}.~{ref_name}.hificnv.vcf.gz \
-      | wc -l > stat_DUP_count.txt || echo 0 > stat_DUP_count.txt
-    bcftools query \
-      -i 'FILTER="PASS" & SVTYPE="DUP"' \
-      -f '%INFO/SVLEN\n' ~{sample_id}.~{ref_name}.hificnv.vcf.gz \
-      | awk '{{ s+=$1 }};END {{ print s/(1000000) }}' > stat_DUP_sum.txt || echo 0 > stat_DUP_sum.txt  # TODO: what units do we want on this?
+      > DUP_lengths.txt
+    if [ -s DUP_lengths.txt ]; then
+      python3 ./cnv_stats.py < DUP_lengths.txt > stat_DUP.txt
+      cut -f1 stat_DUP.txt > stat_DUP_count.txt
+      cut -f2 stat_DUP.txt > stat_DUP_sum.txt
+    else
+      echo "0" > stat_DUP_count.txt
+      echo "0" > stat_DUP_sum.txt
+    fi
+
     bcftools query \
       -i 'FILTER="PASS" & SVTYPE="DEL"' \
       -f '%INFO/SVLEN\n' \
       ~{sample_id}.~{ref_name}.hificnv.vcf.gz \
-      | wc -l > stat_DEL_count.txt || echo 0 > stat_DEL_count.txt
-    bcftools query \
-      -i 'FILTER="PASS" & SVTYPE="DEL"' \
-      -f '%INFO/SVLEN\n' ~{sample_id}.~{ref_name}.hificnv.vcf.gz \
-      | awk '{{ s+=$1 }};END {{ print s/(1000000) }}' > stat_DEL_sum.txt || echo 0 > stat_DEL_sum.txt  # TODO: what units do we want on this?
+      > DEL_lengths.txt
+    if [ -s DEL_lengths.txt ]; then
+      python3 ./cnv_stats.py < DEL_lengths.txt > stat_DEL.txt
+      cut -f1 stat_DEL.txt > stat_DEL_count.txt
+      cut -f2 stat_DEL.txt > stat_DEL_sum.txt
+    else
+      echo "0" > stat_DEL_count.txt
+      echo "0" > stat_DEL_sum.txt
+    fi
   >>>
 
   output {
-    File cnv_vcf          = "~{sample_id}.~{ref_name}.hificnv.vcf.gz"
-    File cnv_vcf_index    = "~{sample_id}.~{ref_name}.hificnv.vcf.gz.tbi"
-    File copynum_bedgraph = "~{sample_id}.~{ref_name}.hificnv.copynum.bedgraph"
-    File depth_bw         = "~{sample_id}.~{ref_name}.hificnv.depth.bw"
-    File maf_bw           = "~{sample_id}.~{ref_name}.hificnv.maf.bw"
-    Int stat_DUP_count    = read_int("stat_DUP_count.txt")
-    Int stat_DUP_sum      = read_int("stat_DUP_sum.txt")
-    Int stat_DEL_count    = read_int("stat_DEL_count.txt")
-    Int stat_DEL_sum      = read_int("stat_DEL_sum.txt")
+    File   cnv_vcf          = "~{sample_id}.~{ref_name}.hificnv.vcf.gz"
+    File   cnv_vcf_index    = "~{sample_id}.~{ref_name}.hificnv.vcf.gz.tbi"
+    File   copynum_bedgraph = "~{sample_id}.~{ref_name}.hificnv.copynum.bedgraph"
+    File   depth_bw         = "~{sample_id}.~{ref_name}.hificnv.depth.bw"
+    File   maf_bw           = "~{sample_id}.~{ref_name}.hificnv.maf.bw"
+    String stat_DUP_count   = read_string("stat_DUP_count.txt")
+    String stat_DUP_sum     = read_string("stat_DUP_sum.txt")
+    String stat_DEL_count   = read_string("stat_DEL_count.txt")
+    String stat_DEL_sum     = read_string("stat_DEL_sum.txt")
   }
 
   runtime {
-    docker: "~{runtime_attributes.container_registry}/hificnv@sha256:19fdde99ad2454598ff7d82f27209e96184d9a6bb92dc0485cc7dbe87739b3c2"
+    docker: "~{runtime_attributes.container_registry}/hificnv@sha256:f2e5c94c08896b11b7dec4ed5feb80fa0d26fa68e91a04956fcef20cd19b445b"
     cpu: threads
     memory: mem_gb + " GB"
     disk: disk_size + " GB"
