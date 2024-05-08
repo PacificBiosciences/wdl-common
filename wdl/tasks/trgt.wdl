@@ -80,7 +80,7 @@ task trgt {
 
     trgt --version
 
-    trgt \
+    trgt genotype \
       --threads ~{threads} \
       --karyotype ~{karyotype} \
       --genome ~{ref_fasta} \
@@ -102,6 +102,8 @@ task trgt {
 
     samtools --version
 
+    # default memory is 768 MB/thread, but we typically resource
+    # this task with 0.5 GB/thread, so we need to set memory option
     samtools sort \
       ~{if threads > 1 then "--threads " + (threads - 1) else ""} \
       -m 400M \
@@ -113,25 +115,27 @@ task trgt {
       ~{out_prefix}.trgt.spanning.sorted.bam
 
     bcftools view --no-header --exclude-uncalled \
+      ~{if threads > 1 then "--threads " + (threads - 1) else ""} \
       ~{out_prefix}.trgt.sorted.vcf.gz \
       | wc -l > genotyped_count.txt || echo "0" > genotyped_count.txt
 
     bcftools view --no-header --uncalled \
+      ~{if threads > 1 then "--threads " + (threads - 1) else ""} \
       ~{out_prefix}.trgt.sorted.vcf.gz \
       | wc -l > uncalled_count.txt || echo "0" > uncalled_count.txt
   >>>
 
   output {
-    File bam                  = "~{out_prefix}.trgt.spanning.sorted.bam"
-    File bam_index            = "~{out_prefix}.trgt.spanning.sorted.bam.bai"
-    File vcf                  = "~{out_prefix}.trgt.sorted.vcf.gz"
-    File vcf_index            = "~{out_prefix}.trgt.sorted.vcf.gz.tbi"
-    Int  stat_genotyped_count = read_int("genotyped_count.txt")
-    Int  stat_uncalled_count  = read_int("uncalled_count.txt")
+    File   bam                  = "~{out_prefix}.trgt.spanning.sorted.bam"
+    File   bam_index            = "~{out_prefix}.trgt.spanning.sorted.bam.bai"
+    File   vcf                  = "~{out_prefix}.trgt.sorted.vcf.gz"
+    File   vcf_index            = "~{out_prefix}.trgt.sorted.vcf.gz.tbi"
+    String stat_genotyped_count = read_string("genotyped_count.txt")
+    String stat_uncalled_count  = read_string("uncalled_count.txt")
   }
 
   runtime {
-    docker: "~{runtime_attributes.container_registry}/trgt@sha256:1b99363622352f31a30a7b42e3bdf6c14b6a8945d7790587577c054a6f9afb25"
+    docker: "~{runtime_attributes.container_registry}/trgt@sha256:8a642298defb776ff1edef25527df916b00a596806152e234a3684995639f1d4"
     cpu: threads
     memory: mem_gb + " GB"
     disk: disk_size + " GB"
