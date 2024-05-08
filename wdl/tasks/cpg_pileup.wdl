@@ -86,25 +86,28 @@ task cpg_pileup {
       --model "$PILEUP_MODEL_DIR"/pileup_calling_model.v1.tflite
 
     # count the number of CpG sites in each bed file
-    wc -l < ~{out_prefix}.hap1.bed > ~{out_prefix}.hap1.bed.count || echo 0 > ~{out_prefix}.hap1.bed.count
-    wc -l < ~{out_prefix}.hap2.bed > ~{out_prefix}.hap2.bed.count || echo 0 > ~{out_prefix}.hap2.bed.count
-    wc -l < ~{out_prefix}.combined.bed > ~{out_prefix}.combined.bed.count || echo 0 > ~{out_prefix}.combined.bed.count
+    wc -l < ~{out_prefix}.hap1.bed > ~{out_prefix}.hap1.bed.count \
+      || echo "0" > ~{out_prefix}.hap1.bed.count
+    wc -l < ~{out_prefix}.hap2.bed > ~{out_prefix}.hap2.bed.count \
+      || echo "0" > ~{out_prefix}.hap2.bed.count
+    wc -l < ~{out_prefix}.combined.bed > ~{out_prefix}.combined.bed.count \
+      || echo "0" > ~{out_prefix}.combined.bed.count
   >>>
 
   output {
-    File combined_bed           = "~{out_prefix}.combined.bed"
-    File hap1_bed               = "~{out_prefix}.hap1.bed"
-    File hap2_bed               = "~{out_prefix}.hap2.bed"
-    File combined_bw            = "~{out_prefix}.combined.bw"
-    File hap1_bw               = "~{out_prefix}.hap1.bw"
-    File hap2_bw               = "~{out_prefix}.hap2.bw"
-    Int stat_hap1_cpg_count     = read_int("~{out_prefix}.hap1.bed.count")
-    Int stat_hap2_cpg_count     = read_int("~{out_prefix}.hap2.bed.count")
-    Int stat_combined_cpg_count = read_int("~{out_prefix}.combined.bed.count")
+    File   combined_bed            = "~{out_prefix}.combined.bed"
+    File   hap1_bed                = "~{out_prefix}.hap1.bed"
+    File   hap2_bed                = "~{out_prefix}.hap2.bed"
+    File   combined_bw             = "~{out_prefix}.combined.bw"
+    File   hap1_bw                 = "~{out_prefix}.hap1.bw"
+    File   hap2_bw                 = "~{out_prefix}.hap2.bw"
+    String stat_hap1_cpg_count     = read_string("~{out_prefix}.hap1.bed.count")
+    String stat_hap2_cpg_count     = read_string("~{out_prefix}.hap2.bed.count")
+    String stat_combined_cpg_count = read_string("~{out_prefix}.combined.bed.count")
   }
 
   runtime {
-    docker: "~{runtime_attributes.container_registry}/pb-cpg-tools@sha256:b95ff1c53bb16e53b8c24f0feaf625a4663973d80862518578437f44385f509b"
+    docker: "~{runtime_attributes.container_registry}/pb-cpg-tools@sha256:d2fbcd781ddcf52d95257583add7ee5a4a43ed9fc3e6240bf3406ac3b3876a3b"
     cpu: threads
     memory: mem_gb + " GB"
     disk: disk_size + " GB"
