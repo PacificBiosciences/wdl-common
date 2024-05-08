@@ -81,7 +81,7 @@ task paraphase {
   }
 
   runtime {
-    docker: "~{runtime_attributes.container_registry}/paraphase@sha256:fe7091e74138562022f84c112fbeef78f7f1040c7f67b46a92b3c16403e55969"
+    docker: "~{runtime_attributes.container_registry}/paraphase@sha256:faa45830d9e5751e8c306b16e8e1268b8362921f50666d47a31a03989599cbb8"
     cpu: threads
     memory: mem_gb + " GB"
     disk: disk_size + " GB"
