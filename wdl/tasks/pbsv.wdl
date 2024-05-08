@@ -34,7 +34,8 @@ task pbsv_discover {
     RuntimeAttributes runtime_attributes
   }
 
-  Int threads   = 2
+  Int threads = 2
+  Int mem_gb  = 10
 
   String prefix = basename(aligned_bam, ".bam")
   Int disk_size = ceil((size(aligned_bam, "GB") + size(trf_bed, "GB")) * 2 + 20)
@@ -57,9 +58,9 @@ task pbsv_discover {
   }
 
   runtime {
-    docker: "~{runtime_attributes.container_registry}/pbsv@sha256:d78ee6deb92949bdfde98d3e48dab1d871c177d48d8c87c73d12c45bdda43446"
+    docker: "~{runtime_attributes.container_registry}/pbsv@sha256:e59a63b31676e3fc7eef37649b72b42fb04c53fc4ae20fa3078365bdd11a0c2e"
     cpu: threads
-    memory: "10 GB"
+    memory: mem_gb + " GB"
     disk: disk_size + " GB"
     disks: "local-disk " + disk_size + " HDD"
     preemptible: runtime_attributes.preemptible_tries
@@ -190,7 +191,7 @@ task pbsv_call {
   }
 
   runtime {
-    docker: "~{runtime_attributes.container_registry}/pbsv@sha256:d78ee6deb92949bdfde98d3e48dab1d871c177d48d8c87c73d12c45bdda43446"
+    docker: "~{runtime_attributes.container_registry}/pbsv@sha256:e59a63b31676e3fc7eef37649b72b42fb04c53fc4ae20fa3078365bdd11a0c2e"
     cpu: threads
     memory: "~{mem_gb} GB"
     disk: disk_size + " GB"
