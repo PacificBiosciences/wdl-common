@@ -143,7 +143,7 @@ workflow backend_configuration {
     # AWS HealthOmics must use containers hosted on ECR and cannot use our Quay registry,
     # therefore, container_registry must be defined.
     RuntimeAttributes aws_healthomics_on_demand_runtime_attributes = {
-      "backend": "AWS-HealthOmics",
+      "backend": "AWS-OMICS",
       "preemptible_tries": 0,
       "max_retries": 0,
       "zones": select_first([zones]),
