@@ -34,11 +34,11 @@ task pbsv_discover {
     RuntimeAttributes runtime_attributes
   }
 
-  Int threads = 2
-  Int mem_gb  = 10
-
-  String prefix = basename(aligned_bam, ".bam")
+  Int threads   = 2
+  Int mem_gb    = 10
   Int disk_size = ceil((size(aligned_bam, "GB") + size(trf_bed, "GB")) * 2 + 20)
+
+  String out_prefix = basename(aligned_bam, ".bam")
 
   command <<<
     set -euo pipefail
@@ -50,11 +50,11 @@ task pbsv_discover {
       --hifi \
       ~{"--tandem-repeats " + trf_bed} \
       ~{aligned_bam} \
-      ~{prefix}.svsig.gz
+      ~{out_prefix}.svsig.gz
   >>>
 
   output {
-    File svsig = "~{prefix}.svsig.gz"
+    File svsig = "~{out_prefix}.svsig.gz"
   }
 
   runtime {

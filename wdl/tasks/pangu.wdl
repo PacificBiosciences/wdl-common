@@ -42,8 +42,11 @@ task pangu_cyp2d6 {
     RuntimeAttributes runtime_attributes
   }
 
+  Int threads   = 2
+  Int mem_gb    = 12
+  Int disk_size = ceil(size(haplotagged_bam, "GB") * 2 + 20)
+
   String out_prefix = basename(haplotagged_bam, ".bam")
-  Int    disk_size  = ceil(size(haplotagged_bam, "GB") * 2 + 20)
 
   command <<<
     set -euo pipefail
@@ -57,7 +60,7 @@ task pangu_cyp2d6 {
     awk \
       'BEGIN {{OFS="\t"}} !($2 ~ /\//) {{$2=$2"/[]"}} 1' \
       ~{out_prefix}.pangu_pharmcat.tsv \
-    > ~{out_prefix}.pangu_pharmcat_fix.tsv
+      > ~{out_prefix}.pangu_pharmcat_fix.tsv
   >>>
 
   output {
@@ -67,9 +70,9 @@ task pangu_cyp2d6 {
   }
 
   runtime {
-    docker: "~{runtime_attributes.container_registry}/pangu@sha256:54c53c4865b367d21a09ebe2025181d272b1b05fbcd7459ea1449e4cb51d6ee2"
-    cpu: 2
-    memory: "12 GB"
+    docker: "~{runtime_attributes.container_registry}/pangu@sha256:f68320856c709b07f52ca84b1a89494d5146c2660f55fcef591dd3280396ea4a"
+    cpu: threads
+    memory: mem_gb + " GB"
     disk: disk_size + " GB"
     disks: "local-disk " + disk_size + " HDD"
     preemptible: runtime_attributes.preemptible_tries

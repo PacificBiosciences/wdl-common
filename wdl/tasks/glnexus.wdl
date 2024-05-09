@@ -129,7 +129,7 @@ task glnexus {
   >>>
 
   output {
-    File vcf = "~{cohort_id}.~{ref_name}.deepvariant.glnexus.vcf.gz"
+    File vcf       = "~{cohort_id}.~{ref_name}.deepvariant.glnexus.vcf.gz"
     File vcf_index = "~{cohort_id}.~{ref_name}.deepvariant.glnexus.vcf.gz.tbi"
   }
 

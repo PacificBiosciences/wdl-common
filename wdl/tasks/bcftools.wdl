@@ -240,6 +240,7 @@ task split_vcf_by_sample {
   }
 
   Int threads   = 2
+  Int mem_gb    = 4
   Int disk_size = ceil(size(vcf, "GB") * 2 + 20)
 
   String vcf_basename = basename(vcf, ".vcf.gz")
@@ -276,7 +277,7 @@ task split_vcf_by_sample {
   runtime {
     docker: "~{runtime_attributes.container_registry}/pb_wdl_base@sha256:963c8ef4cd011cd044d5efcff2759aa37b86d0ca5739ce576f60a0ae0967292c"
     cpu: threads
-    memory: "4 GB"
+    memory: mem_gb + " GB"
     disk: disk_size + " GB"
     disks: "local-disk " + disk_size + " HDD"
     preemptible: runtime_attributes.preemptible_tries
@@ -323,6 +324,7 @@ task bcftools_merge {
   }
 
   Int threads   = 2
+  Int mem_gb    = 4
   Int disk_size = ceil(size(vcfs, "GB") * 2 + 20)
 
   command <<<
@@ -346,7 +348,7 @@ task bcftools_merge {
   runtime {
     docker: "~{runtime_attributes.container_registry}/pb_wdl_base@sha256:963c8ef4cd011cd044d5efcff2759aa37b86d0ca5739ce576f60a0ae0967292c"
     cpu: threads
-    memory: "4 GB"
+    memory: mem_gb + " GB"
     disk: disk_size + " GB"
     disks: "local-disk " + disk_size + " HDD"
     preemptible: runtime_attributes.preemptible_tries

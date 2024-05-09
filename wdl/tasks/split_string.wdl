@@ -30,8 +30,8 @@ task split_string {
   }
 
   Int threads = 2
-  Int mem_gb = 2
-  Int disk = 10
+  Int mem_gb  = 2
+  Int disk    = 4
 
   command <<<
     echo '~{sub(concatenated_string, delimiter, "\n")}'
@@ -42,8 +42,7 @@ task split_string {
   }
 
   runtime {
-    #docker: "~{runtime_attributes.container_registry}/tool@sha256:" # TODO
-    docker: "ubuntu:20.04"
+    docker: "~{runtime_attributes.container_registry}/pb_wdl_base@sha256:963c8ef4cd011cd044d5efcff2759aa37b86d0ca5739ce576f60a0ae0967292c"
     cpu: threads
     memory: "~{mem_gb} GB"
     disk: "~{disk} GB"

@@ -34,6 +34,7 @@ task samtools_merge {
   }
 
   Int threads   = 8
+  Int mem_gb    = 4
   Int disk_size = ceil(size(bams, "GB") * 2 + 20)
 
   command <<<
@@ -50,14 +51,14 @@ task samtools_merge {
   >>>
 
   output {
-    File merged_bam     = "~{out_prefix}.bam"
+    File merged_bam       = "~{out_prefix}.bam"
     File merged_bam_index = "~{out_prefix}.bam.bai"
   }
 
   runtime {
-    docker: "~{runtime_attributes.container_registry}/samtools@sha256:cbe496e16773d4ad6f2eec4bd1b76ff142795d160f9dd418318f7162dcdaa685"
+    docker: "~{runtime_attributes.container_registry}/pb_wdl_base@sha256:963c8ef4cd011cd044d5efcff2759aa37b86d0ca5739ce576f60a0ae0967292c"
     cpu: threads
-    memory: "4 GB"
+    memory: mem_gb + " GB"
     disk: disk_size + " GB"
     disks: "local-disk " + disk_size + " LOCAL"
     preemptible: runtime_attributes.preemptible_tries
@@ -92,6 +93,7 @@ task samtools_fasta {
   }
 
   Int threads   = 2
+  Int mem_gb    = 4
   Int disk_size = ceil(size(bam, "GB") * 3.5 + 20)
 
   String out_prefix = basename(bam, ".bam")
@@ -112,9 +114,9 @@ task samtools_fasta {
   }
 
   runtime {
-    docker: "~{runtime_attributes.container_registry}/samtools@sha256:cbe496e16773d4ad6f2eec4bd1b76ff142795d160f9dd418318f7162dcdaa685"
+    docker: "~{runtime_attributes.container_registry}/pb_wdl_base@sha256:963c8ef4cd011cd044d5efcff2759aa37b86d0ca5739ce576f60a0ae0967292c"
     cpu: threads
-    memory: "4 GB"
+    memory: mem_gb + " GB"
     disk: disk_size + " GB"
     disks: "local-disk " + disk_size + " HDD"
     preemptible: runtime_attributes.preemptible_tries
@@ -151,15 +153,17 @@ task samtools_reset {
   input {
     File bam
 
-    String remove_tags = "HP,PS,PC,SA,mg,rm,fi,fp,ri,rp"
-    String reject_pg = "pbmm2"
+    String remove_tags = "HP,PS,PC,SA,mg,mc,mi,rm,fi,fp,ri,rp"
+    String reject_pg   = "pbmm2"
 
     RuntimeAttributes runtime_attributes
   }
 
-  String bam_basename = basename(bam, ".bam")
-  Int threads = 4
+  Int threads   = 4
+  Int mem_gb    = 4
   Int disk_size = ceil(size(bam, "GB") * 3.5 + 20)
+
+  String out_prefix = basename(bam, ".bam")
 
   command <<<
     set -euo pipefail
@@ -170,18 +174,18 @@ task samtools_reset {
       ~{if threads > 1 then "--threads " + (threads - 1) else ""} \
       --remove-tag ~{remove_tags} \
       --reject-PG ~{reject_pg} \
-      -o {bam_basename}.reset.bam \
+      -o {out_prefix}.reset.bam \
       ~{bam}
   >>>
 
   output {
-    File out_bam = "~{bam_basename}.reset.bam"
+    File out_bam = "~{out_prefix}.reset.bam"
   }
 
   runtime {
-    docker: "~{runtime_attributes.container_registry}/samtools@sha256:cbe496e16773d4ad6f2eec4bd1b76ff142795d160f9dd418318f7162dcdaa685"
+    docker: "~{runtime_attributes.container_registry}/pb_wdl_base@sha256:963c8ef4cd011cd044d5efcff2759aa37b86d0ca5739ce576f60a0ae0967292c"
     cpu: threads
-    memory: "4 GB"
+    memory: mem_gb + " GB"
     disk: disk_size + " GB"
     disks: "local-disk " + disk_size + " HDD"
     preemptible: runtime_attributes.preemptible_tries

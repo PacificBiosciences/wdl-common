@@ -57,7 +57,7 @@ task cpg_pileup {
     File haplotagged_bam_index
 
     Int min_mapq     = 1
-    Int min_coverage = 10  # TODO: should we change this?
+    Int min_coverage = 10
 
     String out_prefix
 

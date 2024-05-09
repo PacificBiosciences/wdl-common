@@ -42,7 +42,8 @@ task write_ped_phrank {
     RuntimeAttributes runtime_attributes
   }
 
-  Int threads = 2
+  Int threads   = 2
+  Int mem_gb    = 4
   Int disk_size = 20
 
   command <<<
@@ -90,9 +91,9 @@ task write_ped_phrank {
   }
 
   runtime {
-    docker: "~{runtime_attributes.container_registry}/wgs_tertiary@sha256:46f14de75798b54a38055a364a23ca1c9497bf810fee860431b78abc553434f2"
+    docker: "~{runtime_attributes.container_registry}/wgs_tertiary@sha256:961f4868dde05ff5deb93605a877ea1e8281fdaa88ac645218632186d471b15b"
     cpu: threads
-    memory: "4 GB"
+    memory: mem_gb + " GB"
     disk: disk_size + " GB"
     disks: "local-disk " + disk_size + " HDD"
     preemptible: runtime_attributes.preemptible_tries

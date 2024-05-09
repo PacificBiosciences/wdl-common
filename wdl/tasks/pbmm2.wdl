@@ -48,11 +48,11 @@ task pbmm2_align_wgs {
     RuntimeAttributes runtime_attributes
   }
 
-  String movie = basename(bam, ".bam")
-
   Int threads   = 24
   Int mem_gb    = ceil(threads * 4)
-  Int disk_size = ceil((size(bam, "GB") + size(ref_fasta, "GB")) * 4 + 20) # TODO: reduce this
+  Int disk_size = ceil((size(bam, "GB") + size(ref_fasta, "GB")) * 3 + 20)
+
+  String movie = basename(bam, ".bam")
 
   command <<<
     set -euo pipefail
@@ -84,8 +84,8 @@ task pbmm2_align_wgs {
     bamin.close()
     EOF
 
-    # movie stats
-    python3 ./extract_read_length_and_qual.py | gzip -c > ~{sample_id}.~{movie}.read_length_and_quality.tsv.gz
+    python3 ./extract_read_length_and_qual.py \
+      | gzip -c > ~{sample_id}.~{movie}.read_length_and_quality.tsv.gz
 
     wait
   >>>
