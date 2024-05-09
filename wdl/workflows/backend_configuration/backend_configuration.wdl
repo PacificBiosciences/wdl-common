@@ -37,8 +37,10 @@ workflow backend_configuration {
     String? aws_spot_queue_arn
     String? aws_on_demand_queue_arn
     String? gpuType
-    String container_registry = "quay.io/pacbio"
+    String? container_registry
   }
+
+  String default_container_registry = "quay.io/pacbio"
 
   if (backend == "GCP") {
     # zones must be defined
@@ -48,7 +50,8 @@ workflow backend_configuration {
     # queue_arn is not used in GCP
     # gpuCount and gpuType are optional
     # gpuType: ["nvidia-tesla-k80", "nvidia-tesla-p100", "nvidia-tesla-v100", "nvidia-tesla-p4", "nvidia-tesla-t4",
-    #           "nvidia-tesla-a100", "nvidia-a100-80gb", "nvidia-l4", "nvidia-h100-80gb"]  # TODO: figure out which are compatible
+    #           "nvidia-tesla-a100", "nvidia-a100-80gb", "nvidia-l4", "nvidia-h100-80gb"]
+    # TODO: Which are compatible with machine type for deepvariant_call_variants?
     RuntimeAttributes gcp_spot_runtime_attributes = {
       "backend": "GCP",
       "preemptible_tries": 3,
@@ -56,7 +59,7 @@ workflow backend_configuration {
       "zones": select_first([zones]),
       "queue_arn": "",
       "gpuType": select_first([gpuType, ""]),
-      "container_registry": container_registry
+      "container_registry": select_first([container_registry, default_container_registry])
     }
 
     RuntimeAttributes gcp_on_demand_runtime_attributes = {
@@ -66,7 +69,7 @@ workflow backend_configuration {
       "zones": select_first([zones]),
       "queue_arn": "",
       "gpuType": select_first([gpuType, ""]),
-      "container_registry": container_registry
+      "container_registry": select_first([container_registry, default_container_registry])
     }
   }
 
@@ -83,7 +86,7 @@ workflow backend_configuration {
       "zones": "",
       "queue_arn": "",
       "gpuType": "",
-      "container_registry": container_registry
+      "container_registry": select_first([container_registry, default_container_registry])
     }
 
     RuntimeAttributes azure_on_demand_runtime_attributes = {
@@ -93,7 +96,7 @@ workflow backend_configuration {
       "zones": "",
       "queue_arn": "",
       "gpuType": "",
-      "container_registry": container_registry
+      "container_registry": select_first([container_registry, default_container_registry])
     }
   }
 
@@ -115,7 +118,7 @@ workflow backend_configuration {
       "zones": select_first([zones]),
       "queue_arn": select_first([aws_spot_queue_arn, ""]),
       "gpuType": select_first([gpuType, ""]),
-      "container_registry": container_registry
+      "container_registry": select_first([container_registry, default_container_registry])
     }
 
     RuntimeAttributes aws_agc_on_demand_runtime_attributes = {
@@ -125,26 +128,20 @@ workflow backend_configuration {
       "zones": select_first([zones]),
       "queue_arn": select_first([aws_on_demand_queue_arn, ""]),
       "gpuType": select_first([gpuType, ""]),
-      "container_registry": container_registry
+      "container_registry": select_first([container_registry, default_container_registry])
     }
   }
 
   if (backend == "AWS-OMICS") {
     # No distinction between preemptible and on-demand in AWS-OMICS configuration
-    # zones must be defined
-    # aws_spot_queue_arn must be defined if preemptible is set to true and engine is not miniwdl
-    # aws_on_demand_queue_arn must be defined if preemptible is set to false and engine is not miniwdl
-    # Using miniwdl engine, the queue ARN of the context the workflow has been submitted to will be used;
-    #   the queue_arn runtime attribute will be ignored
-
     # max_retries applies to failures due to preemption or to a nonzero rc
     # preemptible is not used in AWS
 
     # gpuCount and gpuType are optional and map to acceleratorCount and acceleratorType 
     # acceleratorType: ["nvidia-tesla-a10g", "nvidia-tesla-t4", "nvidia-tesla-t4-a10g"]
 
-    # AWS HealthOmics must use containers hosted on ECR and cannot use our Quay registry.
-    # TODO: are zones/arns needed for AWS HealthOmics?
+    # AWS HealthOmics must use containers hosted on ECR and cannot use our Quay registry,
+    # therefore, container_registry must be defined.
     RuntimeAttributes aws_healthomics_on_demand_runtime_attributes = {
       "backend": "AWS-HealthOmics",
       "preemptible_tries": 0,
@@ -152,7 +149,7 @@ workflow backend_configuration {
       "zones": select_first([zones]),
       "queue_arn": select_first([aws_on_demand_queue_arn, ""]),
       "gpuType": select_first([gpuType, ""]),
-      "container_registry": container_registry
+      "container_registry": select_first([container_registry])
     }
   }
 
@@ -166,7 +163,7 @@ workflow backend_configuration {
       "zones": "",
       "queue_arn": "",
       "gpuType": select_first([gpuType, ""]),
-      "container_registry": container_registry
+      "container_registry": select_first([container_registry, default_container_registry])
     }
   }
 
