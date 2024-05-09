@@ -200,8 +200,9 @@ task deepvariant_make_examples {
   }
 
   Int task_end_index = task_start_index + tasks_per_shard - 1
-  Int disk_size      = ceil(size(aligned_bams, "GB") * 2 + size(ref_fasta, "GB") + 20)
+
   Int mem_gb         = tasks_per_shard * 4
+  Int disk_size      = ceil(size(aligned_bams, "GB") * 2 + size(ref_fasta, "GB") + 20)
 
   command <<<
     set -euo pipefail
@@ -309,8 +310,8 @@ task deepvariant_call_variants {
     RuntimeAttributes runtime_attributes
   }
 
-  Int threads        = if gpu then 8 else total_deepvariant_tasks
-  Int writer_threads = if gpu then 4 else 8
+  Int threads        = if gpu then 8  else total_deepvariant_tasks
+  Int writer_threads = if gpu then 4  else 8
   Int mem_gb         = if gpu then 32 else (total_deepvariant_tasks * 4)
   Int disk_size      = ceil(size(example_tfrecord_tars, "GB") * 2 + 100)
 
