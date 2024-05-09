@@ -73,8 +73,11 @@ task mosdepth {
       ~{out_prefix} \
       ~{aligned_bam}
 
-    mv ~{out_prefix}.mosdepth.summary.txt ~{sample_id}.~{ref_name}.mosdepth.summary.txt
-    mv ~{out_prefix}.regions.bed.gz ~{sample_id}.~{ref_name}.mosdepth.regions.bed.gz
+    # normalize output names
+    if [ ! -f ~{sample_id}.~{ref_name}.mosdepth.summary.txt ]; then
+      mv ~{out_prefix}.mosdepth.summary.txt ~{sample_id}.~{ref_name}.mosdepth.summary.txt
+      mv ~{out_prefix}.regions.bed.gz ~{sample_id}.~{ref_name}.regions.bed.gz
+    fi
 
     cat << EOF > get_mean_depth.py
     import pandas as pd
@@ -100,7 +103,7 @@ task mosdepth {
 
   output {
     File   summary         = "~{sample_id}.~{ref_name}.mosdepth.summary.txt"
-    File   region_bed      = "~{sample_id}.~{ref_name}.mosdepth.regions.bed.gz"
+    File   region_bed      = "~{sample_id}.~{ref_name}.regions.bed.gz"
     String inferred_sex    = if (infer_sex) then read_string("inferred_sex.txt") else ""
     String stat_mean_depth = read_string("mean_depth.txt")
   }
