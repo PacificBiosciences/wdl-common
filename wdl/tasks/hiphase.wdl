@@ -23,10 +23,10 @@ task hiphase {
     phased_vcf_index_names: {
       name: "Phased VCF index names"
     }
-    bam: {
+    aligned_bam: {
       name: "BAM"
     }
-    bam_index: {
+    aligned_bam_index: {
       name: "BAM index"
     }
     ref_name: {
@@ -81,8 +81,8 @@ task hiphase {
     Array[String] phased_vcf_names
     Array[String] phased_vcf_index_names
 
-    File bam
-    File bam_index
+    File aligned_bam
+    File aligned_bam_index
 
     String ref_name
     File ref_fasta
@@ -93,7 +93,7 @@ task hiphase {
 
   Int threads   = 16
   Int mem_gb    = threads * 5
-  Int disk_size = ceil(size(vcfs, "GB") + size(ref_fasta, "GB") + size(bam, "GB") * 2 + 20)
+  Int disk_size = ceil(size(vcfs, "GB") + size(ref_fasta, "GB") + size(aligned_bam, "GB") * 2 + 20)
 
   command <<<
     set -euo pipefail
@@ -104,7 +104,7 @@ task hiphase {
       --sample-name ~{sample_id} \
       ~{sep=" " prefix("--vcf ", vcfs)} \
       ~{sep=" " prefix("--output-vcf ", phased_vcf_names)} \
-      --bam ~{bam} \
+      --bam ~{aligned_bam} \
       --output-bam ~{sample_id}.~{ref_name}.haplotagged.bam \
       --reference ~{ref_fasta} \
       --summary-file ~{sample_id}.~{ref_name}.hiphase.stats.tsv \
