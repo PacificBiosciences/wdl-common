@@ -66,7 +66,7 @@ task mosdepth {
     mosdepth --version
 
     mosdepth \
-      --threads ~{threads - 1} \
+      ~{if threads > 1 then "--threads " + (threads - 1) else ""} \
       --by 500 \
       --no-per-base \
       --use-median \
