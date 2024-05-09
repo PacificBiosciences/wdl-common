@@ -78,6 +78,8 @@ workflow pharmcat {
     RuntimeAttributes default_runtime_attributes
   }
 
+  String pharmcat_docker = if (default_runtime_attributes.backend == "AWS-OMICS") then default_runtime_attributes.container_registry else "pgkb" + "/pharmcat@sha256:158ab532c4c8caedb368856730c8f46c97cf3b2cd804a9f2916095dd194fe3e0"
+
   call pharmcat_preprocess {
     input:
       vcf                      = phased_vcf,
@@ -86,6 +88,7 @@ workflow pharmcat {
       ref_index                = ref_index,
       pharmcat_positions       = pharmcat_positions,
       pharmcat_positions_index = pharmcat_positions_index,
+      pharmcat_docker          = pharmcat_docker,
       runtime_attributes       = default_runtime_attributes
   }
 
@@ -103,6 +106,7 @@ workflow pharmcat {
     input:
       preprocessed_filtered_vcf = filter_preprocessed_vcf.filtered_vcf,
       input_tsvs                = input_tsvs,
+      pharmcat_docker           = pharmcat_docker,
       runtime_attributes        = default_runtime_attributes
   }
 
@@ -141,6 +145,9 @@ task pharmcat_preprocess {
     pharmcat_positions_index: {
       name: "Pharmcat positions VCF index"
     }
+    pharmcat_docker: {
+      name: "Pharmcat Docker image"
+    }
     runtime_attributes: {
       name: "Runtime attribute structure"
     }
@@ -162,43 +169,37 @@ task pharmcat_preprocess {
     File pharmcat_positions
     File pharmcat_positions_index
 
+    String pharmcat_docker
+
     RuntimeAttributes runtime_attributes
   }
 
   String out_prefix = basename(vcf, ".vcf.gz")
-  Int    disk_size  = ceil((size(vcf, "GB") + size(ref_fasta, "GB") + size(pharmcat_positions, "GB")) * 2 + 20)
 
-  # TODO: host the image ourselves and get the sha256
-  String docker_image = if (runtime_attributes.backend == "AWS-HealthOmics") then runtime_attributes.container_registry else "pgkb" + "/pharmcat:2.3.0"
+  Int threads   = 2
+  Int mem_gb    = 4
+  Int disk_size = ceil((size(vcf, "GB") + size(ref_fasta, "GB") + size(pharmcat_positions, "GB")) * 2 + 20)
 
   command <<<
     set -euo pipefail
 
-    bcftools --version
-
-    bcftools view \
-      --apply-filters PASS \
-      --output-type z \
-      --output ~{out_prefix}.pass_only.vcf.gz \
-      ~{vcf}
-
     /pharmcat/pharmcat_vcf_preprocessor.py \
       --missing-to-ref \
-      -vcf ~{out_prefix}.pass_only.vcf.gz \
+      -vcf ~{vcf} \
       -refFna ~{ref_fasta} \
       -refVcf ~{pharmcat_positions} \
       -o .
   >>>
 
   output {
-    File preprocessed_vcf = "~{out_prefix}.pass_only.preprocessed.vcf.bgz"
+    File preprocessed_vcf = "~{out_prefix}.preprocessed.vcf.bgz"
     File? missing_pgx_vcf = "~{out_prefix}.missing_pgx_var.vcf"
   }
 
   runtime {
-    docker: docker_image
-    cpu: 2
-    memory: "4 GB"
+    docker: pharmcat_docker
+    cpu: threads
+    memory: mem_gb + " GB"
     disk: disk_size + " GB"
     disks: "local-disk " + disk_size + " HDD"
     preemptible: runtime_attributes.preemptible_tries
@@ -252,22 +253,54 @@ task filter_preprocessed_vcf {
     RuntimeAttributes runtime_attributes
   }
 
-  String out_prefix = basename(preprocessed_vcf, ".vcf.bgz")
-  Int    disk_size  = ceil((size(preprocessed_vcf, "GB") + size(haplotagged_bam, "GB")) * 2 + 20)
+  Int threads   = 4
+  Int mem_gb    = 4
+  Int disk_size = ceil((size(preprocessed_vcf, "GB") + size(haplotagged_bam, "GB")) + 20)
+
+  String preprocessed_vcf_basename = basename(preprocessed_vcf)
+  String out_prefix                = basename(preprocessed_vcf, ".vcf.bgz")
 
   command <<<
     set -euo pipefail
 
-    bedtools coverage \
-      -sorted \
-      -g ~{ref_index} \
-      -f 1 \
-      -header \
-      -mean \
-      -a ~{preprocessed_vcf} \
-      -b ~{haplotagged_bam} \
-    | ( sed  -u '/^#CHROM/q' ; awk '$11 >= ~{min_coverage}' | cut -f1-10 ) \
-    > ~{out_prefix}.filtered.vcf
+    bcftools --version
+
+    ln -s ~{preprocessed_vcf} .
+    bcftools index --tbi ~{preprocessed_vcf_basename}
+
+    # get a list of the regions overlapping variants
+    bcftools query \
+      --format '%CHROM\t%POS0\t%END\n' \
+      ~{preprocessed_vcf} \
+      > targeted.bed
+
+    mosdepth --version
+
+    # get the mean coverage for each region
+    mosdepth \
+      ~{if threads > 1 then "--threads " + (threads - 1) else ""} \
+      --by targeted.bed \
+      --no-per-base \
+      targeted \
+      ~{haplotagged_bam}
+
+    # filter the bed for regions >= min_coverage
+    cat << EOF > filter.py
+    import gzip
+    with gzip.open('targeted.regions.bed.gz', 'rt') as f:
+      for line in f.readlines():
+        if float(line.split('\t')[3]) >= ~{min_coverage}:
+          print(line.strip())
+    EOF
+
+    python3 ./filter.py > targeted_regions.sufficient_depth.bed
+
+    # filter the vcf for regions >= min_coverage
+    bcftools view \
+      --regions-file targeted_regions.sufficient_depth.bed \
+      --output-type v \
+      --output ~{out_prefix}.filtered.vcf \
+      ~{preprocessed_vcf_basename}
   >>>
 
   output {
@@ -275,9 +308,9 @@ task filter_preprocessed_vcf {
   }
 
   runtime {
-    docker: "~{runtime_attributes.container_registry}/bedtools@sha256:f9f6ba24ebd61dbe02898097de44486691e0a337c6fd6e26f440fed5d798e321"
-    cpu: 2
-    memory: "4 GB"
+    docker: "~{runtime_attributes.container_registry}/mosdepth@sha256:8b89b68f2d3f919ebab404b50dd1bc56803f5260074baae77acfa7e64a3a1f14"
+    cpu: threads
+    memory: mem_gb + " GB"
     disk: disk_size + " GB"
     disks: "local-disk " + disk_size + " HDD"
     preemptible: runtime_attributes.preemptible_tries
@@ -300,6 +333,9 @@ task run_pharmcat {
     input_tsvs: {
       name: "Pangu, StarPhase, and/or HiFiHLA TSVs"
     }
+    pharmcat_docker: {
+      name: "Pharmcat Docker image"
+    }
     runtime_attributes: {
       name: "Runtime attribute structure"
     }
@@ -321,14 +357,16 @@ task run_pharmcat {
     File preprocessed_filtered_vcf
     Array[File] input_tsvs
 
+    String pharmcat_docker
+
     RuntimeAttributes runtime_attributes
   }
 
-  String out_prefix = basename(preprocessed_filtered_vcf, ".vcf")
-  Int    disk_size  = ceil(size(preprocessed_filtered_vcf, "GB") * 2 + 20)
+  Int threads   = 2
+  Int mem_gb    = 4
+  Int disk_size = ceil(size(preprocessed_filtered_vcf, "GB") * 2 + 20)
 
-  # TODO: host the image ourselves and get the sha256
-  String docker_image = if (runtime_attributes.backend == "AWS-HealthOmics") then runtime_attributes.container_registry else "pgkb" + "/pharmcat:2.3.0"
+  String out_prefix = basename(preprocessed_filtered_vcf, ".vcf")
 
   command <<<
     set -euo pipefail
@@ -351,9 +389,9 @@ task run_pharmcat {
   }
 
   runtime {
-    docker: docker_image
-    cpu: 2
-    memory: "4 GB"
+    docker: pharmcat_docker
+    cpu: threads
+    memory: mem_gb + " GB"
     disk: disk_size + " GB"
     disks: "local-disk " + disk_size + " HDD"
     preemptible: runtime_attributes.preemptible_tries
