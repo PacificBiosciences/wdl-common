@@ -4,7 +4,7 @@ import "../structs.wdl"
 
 task pbstarphase_diplotype {
   meta {
-
+    description: "Run PBStarPhase to generate diplotype calls and PharmCAT TSV output."
   }
 
   parameter_meta {
@@ -80,7 +80,7 @@ task pbstarphase_diplotype {
   }
 
   runtime {
-    docker: "~{runtime_attributes.container_registry}/pbstarphase@sha256:3c0be2bb729503be0ad76d620d85b0283343f3fc33a6484bb79198fad7c1a94d"
+    docker: "~{runtime_attributes.container_registry}/pbstarphase@sha256:09e3bfc1f4ab2c7cc6055dee186dfcf89c9c4300ddb6248e501f57a6a117a7c4"
     cpu: threads
     memory: mem_gb + " GB"
     disk: disk_size + " GB"
