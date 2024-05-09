@@ -56,27 +56,23 @@ task hifihla_call_reads {
     set -euo pipefail
     hifihla --version
 
-    export POLARS_MAX_THREADS=~{threads}  # Polars doesn't respect --threads # TODO: move this to the container
+    export POLARS_MAX_THREADS=~{threads}  # Polars doesn't respect --threads
 
-
-    mkdir -p hifihla
     hifihla call-reads \
       --threads ~{threads} \
       --preset wgs \
       --abam ~{aligned_bam} \
-      --out_prefix hifihla/~{sample_id}
-
-    mv hifihla/* .
+      --out_prefix ./~{sample_id}
   >>>
 
   output {
-    File summary                 = "~{sample_id}_hifihla_summary.tsv"
-    File report_tsv              = "~{sample_id}_hifihla_report.tsv"
-    File report_json             = "~{sample_id}_hifihla_report.json"
+    File summary     = "~{sample_id}_hifihla_summary.tsv"
+    File report_tsv  = "~{sample_id}_hifihla_report.tsv"
+    File report_json = "~{sample_id}_hifihla_report.json"
   }
 
   runtime {
-    docker: "~{runtime_attributes.container_registry}/hifihla@sha256:1510a9d80686fb5c9ca24b11549c94eae92b7b1ff3577ea2f4ee9ef834f85a9b"
+    docker: "~{runtime_attributes.container_registry}/hifihla@sha256:632f81ba8c953908dc0344a1fcfe627f03acc7fb113802846ee63c21e52756e6"
     cpu: threads
     memory: mem_gb + " GB"
     disk: disk_size + " GB"
