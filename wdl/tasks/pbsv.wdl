@@ -58,7 +58,7 @@ task pbsv_discover {
   }
 
   runtime {
-    docker: "~{runtime_attributes.container_registry}/pbsv@sha256:e59a63b31676e3fc7eef37649b72b42fb04c53fc4ae20fa3078365bdd11a0c2e"
+    docker: "~{runtime_attributes.container_registry}/pbsv@sha256:7626286e07dd185ca698efc80bd0d26cd3a139fe19781dfde5b6d07e895673cd"
     cpu: threads
     memory: mem_gb + " GB"
     disk: disk_size + " GB"
@@ -191,7 +191,7 @@ task pbsv_call {
   }
 
   runtime {
-    docker: "~{runtime_attributes.container_registry}/pbsv@sha256:e59a63b31676e3fc7eef37649b72b42fb04c53fc4ae20fa3078365bdd11a0c2e"
+    docker: "~{runtime_attributes.container_registry}/pbsv@sha256:7626286e07dd185ca698efc80bd0d26cd3a139fe19781dfde5b6d07e895673cd"
     cpu: threads
     memory: "~{mem_gb} GB"
     disk: disk_size + " GB"

@@ -135,7 +135,7 @@ task trgt {
   }
 
   runtime {
-    docker: "~{runtime_attributes.container_registry}/trgt@sha256:8a642298defb776ff1edef25527df916b00a596806152e234a3684995639f1d4"
+    docker: "~{runtime_attributes.container_registry}/trgt@sha256:b23568c5f704b74cf20d327e8a1d52f537eaebe3384e2e8dbda674c6a4434819"
     cpu: threads
     memory: mem_gb + " GB"
     disk: disk_size + " GB"

@@ -72,7 +72,7 @@ task hifihla_call_reads {
   }
 
   runtime {
-    docker: "~{runtime_attributes.container_registry}/hifihla@sha256:632f81ba8c953908dc0344a1fcfe627f03acc7fb113802846ee63c21e52756e6"
+    docker: "~{runtime_attributes.container_registry}/hifihla@sha256:2cb8bcae12558cacb8dd7fa383ed3a1388b0b75b463bd2e83cc88f6d8dc0f58a"
     cpu: threads
     memory: mem_gb + " GB"
     disk: disk_size + " GB"

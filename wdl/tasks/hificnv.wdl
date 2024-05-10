@@ -181,7 +181,7 @@ task hificnv {
   }
 
   runtime {
-    docker: "~{runtime_attributes.container_registry}/hificnv@sha256:f2e5c94c08896b11b7dec4ed5feb80fa0d26fa68e91a04956fcef20cd19b445b"
+    docker: "~{runtime_attributes.container_registry}/hificnv@sha256:c9e2d07240299cfff655ae9a96eb604934879128bd7aed9e60af6619f6c36b9a"
     cpu: threads
     memory: mem_gb + " GB"
     disk: disk_size + " GB"

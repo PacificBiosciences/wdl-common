@@ -308,7 +308,7 @@ task filter_preprocessed_vcf {
   }
 
   runtime {
-    docker: "~{runtime_attributes.container_registry}/mosdepth@sha256:8b89b68f2d3f919ebab404b50dd1bc56803f5260074baae77acfa7e64a3a1f14"
+    docker: "~{runtime_attributes.container_registry}/mosdepth@sha256:f715c11100e9bb3562cce1c5e23a185cfcc92a6fec412b16c30c0250496cc0d1"
     cpu: threads
     memory: mem_gb + " GB"
     disk: disk_size + " GB"
