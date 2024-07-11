@@ -78,7 +78,7 @@ workflow pharmcat {
     RuntimeAttributes default_runtime_attributes
   }
 
-  String pharmcat_docker = if (default_runtime_attributes.backend == "AWS-OMICS") then default_runtime_attributes.container_registry else "pgkb" + "/pharmcat:2.12.0"
+  String pharmcat_docker = (if (default_runtime_attributes.backend == "AWS-HealthOmics") then default_runtime_attributes.container_registry else "pgkb") + "/pharmcat:2.12.0"
 
   call pharmcat_preprocess {
     input:

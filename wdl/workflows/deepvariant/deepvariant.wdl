@@ -80,7 +80,7 @@ workflow deepvariant {
   Int num_shards              = 8
   Int tasks_per_shard         = total_deepvariant_tasks / num_shards
 
-  String docker_image = if (default_runtime_attributes.backend == "AWS-OMICS") then default_runtime_attributes.container_registry else "google" + "/deepvariant:~{deepvariant_version}"
+  String docker_image = (if (default_runtime_attributes.backend == "AWS-HealthOmics") then default_runtime_attributes.container_registry else "google") + "/deepvariant:~{deepvariant_version}"
 
   scatter (shard_index in range(num_shards)) {
     Int task_start_index = shard_index * tasks_per_shard
@@ -101,22 +101,37 @@ workflow deepvariant {
     }
   }
 
-  call deepvariant_call_variants {
-    input:
-      sample_id                    = sample_id,
-      ref_name                     = ref_name,
-      example_tfrecord_tars        = deepvariant_make_examples.example_tfrecord_tar,
-      custom_deepvariant_model_tar = custom_deepvariant_model_tar,
-      total_deepvariant_tasks      = total_deepvariant_tasks,
-      docker_image                 = docker_image + if gpu then "-gpu" else "",
-      gpu                          = gpu,
-      runtime_attributes           = default_runtime_attributes
+
+  if (!gpu) {
+    call deepvariant_call_variants_cpu {
+      input:
+        sample_id                    = sample_id,
+        ref_name                     = ref_name,
+        example_tfrecord_tars        = deepvariant_make_examples.example_tfrecord_tar,
+        custom_deepvariant_model_tar = custom_deepvariant_model_tar,
+        total_deepvariant_tasks      = total_deepvariant_tasks,
+        docker_image                 = docker_image,
+        runtime_attributes           = default_runtime_attributes
+    }
+  }
+
+  if (gpu) {
+    call deepvariant_call_variants_gpu {
+      input:
+        sample_id                    = sample_id,
+        ref_name                     = ref_name,
+        example_tfrecord_tars        = deepvariant_make_examples.example_tfrecord_tar,
+        custom_deepvariant_model_tar = custom_deepvariant_model_tar,
+        total_deepvariant_tasks      = total_deepvariant_tasks,
+        docker_image                 = docker_image + "-gpu",
+        runtime_attributes           = default_runtime_attributes
+    }
   }
 
   call deepvariant_postprocess_variants {
     input:
       sample_id                     = sample_id,
-      tfrecords_tar                 = deepvariant_call_variants.tfrecords_tar,
+      tfrecords_tar                 = select_first([deepvariant_call_variants_gpu.tfrecords_tar, deepvariant_call_variants_cpu.tfrecords_tar]),
       nonvariant_site_tfrecord_tars = deepvariant_make_examples.nonvariant_site_tfrecord_tar,
       ref_fasta                     = ref_fasta,
       ref_index                     = ref_index,
@@ -260,7 +275,7 @@ task deepvariant_make_examples {
   }
 }
 
-task deepvariant_call_variants {
+task deepvariant_call_variants_cpu {
   meta {
     description: "Run DeepVariant call_variants step"
   }
@@ -284,9 +299,6 @@ task deepvariant_call_variants {
     custom_deepvariant_model_tar: {
       name: "Custom DeepVariant Model tar"
     }
-    gpu: {
-      name: "Use GPU for DeepVariant call_variants"
-    }
     runtime_attributes: {
       name: "Runtime attribute structure"
     }
@@ -304,14 +316,12 @@ task deepvariant_call_variants {
     Int total_deepvariant_tasks
     String docker_image
 
-    Boolean gpu = false
-
     RuntimeAttributes runtime_attributes
   }
 
-  Int threads        = if gpu then 8  else total_deepvariant_tasks
-  Int writer_threads = if gpu then 4  else 8
-  Int mem_gb         = if gpu then 32 else (total_deepvariant_tasks * 4)
+  Int threads        = total_deepvariant_tasks
+  Int writer_threads = 8
+  Int mem_gb         = total_deepvariant_tasks * 4
   Int disk_size      = ceil(size(example_tfrecord_tars, "GB") * 2 + 100)
 
   command <<<
@@ -357,12 +367,107 @@ task deepvariant_call_variants {
     preemptible: runtime_attributes.preemptible_tries
     maxRetries: runtime_attributes.max_retries
     awsBatchRetryAttempts: runtime_attributes.max_retries  # !UnknownRuntimeKey
-    queueArn: runtime_attributes.queue_arn
-    gpu: gpu
-    gpuCount: if gpu then 1 else 0
-    gpuType: if gpu then runtime_attributes.gpuType else ""
-    acceleratorCount: if gpu then 1 else 0  # !UnknownRuntimeKey
-    acceleratorType: if gpu then runtime_attributes.gpuType else ""  # !UnknownRuntimeKey
+    zones: runtime_attributes.zones
+  }
+}
+
+task deepvariant_call_variants_gpu {
+  meta {
+    description: "Run DeepVariant call_variants step"
+  }
+
+  parameter_meta {
+    sample_id: {
+      name: "Sample ID"
+    }
+    ref_name: {
+      name: "Reference name"
+    }
+    example_tfrecord_tars: {
+      name: "Example TFRecord tars"
+    }
+    total_deepvariant_tasks: {
+      name: "Total DeepVariant tasks"
+    }
+    docker_image: {
+      name: "Docker image URL"
+    }
+    custom_deepvariant_model_tar: {
+      name: "Custom DeepVariant Model tar"
+    }
+    runtime_attributes: {
+      name: "Runtime attribute structure"
+    }
+    tfrecords_tar: {
+      name: "TFRecords tar"
+    }
+  }
+
+  input {
+    String sample_id
+    String ref_name
+    Array[File] example_tfrecord_tars
+
+    File? custom_deepvariant_model_tar
+    Int total_deepvariant_tasks
+    String docker_image
+
+    RuntimeAttributes runtime_attributes
+  }
+
+  Int threads        = 8
+  Int writer_threads = 4
+  Int mem_gb         = 32
+  Int disk_size      = ceil(size(example_tfrecord_tars, "GB") * 2 + 100)
+
+  command <<<
+    set -euo pipefail
+
+    while read -r tfrecord_tar || [[ -n "${tfrecord_tar}" ]]; do
+      tar -zxvf "${tfrecord_tar}"
+    done < ~{write_lines(example_tfrecord_tars)}
+
+    if ~{defined(custom_deepvariant_model_tar)}; then
+      mkdir -p ./custom_deepvariant_model
+      tar --no-same-owner -zxvf ~{custom_deepvariant_model_tar} -C ./custom_deepvariant_model
+      DEEPVARIANT_MODEL="./custom_deepvariant_model"
+    else
+      DEEPVARIANT_MODEL="/opt/models/pacbio"
+    fi
+
+    echo "DeepVariant version: $VERSION"
+    echo "DeepVariant model: $DEEPVARIANT_MODEL"
+
+    /opt/deepvariant/bin/call_variants \
+      --writer_threads ~{writer_threads} \
+      --outfile ~{sample_id}.~{ref_name}.call_variants_output.tfrecord.gz \
+      --examples "example_tfrecords/~{sample_id}.examples.tfrecord@~{total_deepvariant_tasks}.gz" \
+      --checkpoint "${DEEPVARIANT_MODEL}"
+
+    tar -zcvf ~{sample_id}.~{ref_name}.call_variants_output.tar.gz ~{sample_id}.~{ref_name}.call_variants_output*.tfrecord.gz \
+      && rm ~{sample_id}.~{ref_name}.call_variants_output*.tfrecord.gz \
+      && rm -rf example_tfrecords \
+      && rm -rf ./custom_deepvariant_model
+  >>>
+
+  output {
+    File tfrecords_tar = "~{sample_id}.~{ref_name}.call_variants_output.tar.gz"
+  }
+
+  runtime {
+    docker: docker_image
+    cpu: threads
+    memory: mem_gb + " GB"
+    disk: disk_size + " GB"
+    disks: "local-disk " + disk_size + " HDD"
+    preemptible: runtime_attributes.preemptible_tries
+    maxRetries: runtime_attributes.max_retries
+    awsBatchRetryAttempts: runtime_attributes.max_retries  # !UnknownRuntimeKey
+    gpu: true
+    gpuCount: 1
+    gpuType: runtime_attributes.gpuType
+    acceleratorCount: 1  # !UnknownRuntimeKey
+    acceleratorType: runtime_attributes.gpuType  # !UnknownRuntimeKey
     zones: runtime_attributes.zones
   }
 }
@@ -456,7 +561,7 @@ task deepvariant_postprocess_variants {
     # Filter for only PASS variants
     bcftools view \
     ~{if threads > 1 then "--threads " + (threads - 1) else ""} \
-    --apply-filters PASS \
+    --exclude-uncalled \
     --output-type z \
     --output-file ~{sample_id}.~{ref_name}.small_variants.passing.vcf.gz \
     ~{sample_id}.~{ref_name}.small_variants.vcf.gz
