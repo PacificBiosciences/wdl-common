@@ -135,7 +135,7 @@ task trgt {
   }
 
   runtime {
-    docker: "~{runtime_attributes.container_registry}/trgt@sha256:b23568c5f704b74cf20d327e8a1d52f537eaebe3384e2e8dbda674c6a4434819"
+    docker: "~{runtime_attributes.container_registry}/trgt@sha256:e626b0a102c11ad9d52bed5a5573052bc76560f3f02146c48babc4a76bc74f52"
     cpu: threads
     memory: mem_gb + " GB"
     disk: disk_size + " GB"
@@ -143,7 +143,74 @@ task trgt {
     preemptible: runtime_attributes.preemptible_tries
     maxRetries: runtime_attributes.max_retries
     awsBatchRetryAttempts: runtime_attributes.max_retries  # !UnknownRuntimeKey
-    queueArn: runtime_attributes.queue_arn
+    zones: runtime_attributes.zones
+  }
+}
+
+task coverage_dropouts {
+  meta {
+    description: "Get coverage dropouts from aligned reads."
+  }
+
+  parameter_meta {
+    aligned_bam: {
+      name: "Aligned BAM"
+    }
+    aligned_bam_index: {
+      name: "Aligned BAM index"
+    }
+    trgt_bed: {
+      name: "TRGT tandem repeat catalog BED"
+    }
+    out_prefix: {
+      name: "Output prefix"
+    }
+    runtime_attributes: {
+      name: "Runtime attribute structure"
+    }
+    dropouts: {
+      name: "TRGT regions with coverage dropouts"
+    }
+  }
+
+  input {
+    File aligned_bam
+    File aligned_bam_index
+
+    File trgt_bed
+
+    String out_prefix
+
+    RuntimeAttributes runtime_attributes
+  }
+
+  Int threads   = 2
+  Int mem_gb    = 4
+  Int disk_size = ceil((size(aligned_bam, "GB")) + 20)
+
+  command <<<
+    set -euo pipefail
+
+    # Get coverage dropouts
+    check_trgt_coverage.py \
+      ~{trgt_bed} \
+      ~{aligned_bam} \
+    > ~{out_prefix}.trgt.dropouts.txt
+  >>>
+
+  output {
+    File dropouts = "~{out_prefix}.trgt.dropouts.txt"
+  }
+
+  runtime {
+    docker: "~{runtime_attributes.container_registry}/trgt@sha256:e626b0a102c11ad9d52bed5a5573052bc76560f3f02146c48babc4a76bc74f52"
+    cpu: threads
+    memory: mem_gb + " GB"
+    disk: disk_size + " GB"
+    disks: "local-disk " + disk_size + " HDD"
+    preemptible: runtime_attributes.preemptible_tries
+    maxRetries: runtime_attributes.max_retries
+    awsBatchRetryAttempts: runtime_attributes.max_retries
     zones: runtime_attributes.zones
   }
 }
