@@ -120,7 +120,6 @@ task bcftools_stats_roh_small_variants {
     preemptible: runtime_attributes.preemptible_tries
     maxRetries: runtime_attributes.max_retries
     awsBatchRetryAttempts: runtime_attributes.max_retries  # !UnknownRuntimeKey
-    queueArn: runtime_attributes.queue_arn
     zones: runtime_attributes.zones
   }
 }
@@ -200,7 +199,6 @@ task concat_pbsv_vcf {
     preemptible: runtime_attributes.preemptible_tries
     maxRetries: runtime_attributes.max_retries
     awsBatchRetryAttempts: runtime_attributes.max_retries  # !UnknownRuntimeKey
-    queueArn: runtime_attributes.queue_arn
     zones: runtime_attributes.zones
   }
 }
@@ -283,7 +281,6 @@ task split_vcf_by_sample {
     preemptible: runtime_attributes.preemptible_tries
     maxRetries: runtime_attributes.max_retries
     awsBatchRetryAttempts: runtime_attributes.max_retries  # !UnknownRuntimeKey
-    queueArn: runtime_attributes.queue_arn
     zones: runtime_attributes.zones
   }
 }
@@ -354,7 +351,6 @@ task bcftools_merge {
     preemptible: runtime_attributes.preemptible_tries
     maxRetries: runtime_attributes.max_retries
     awsBatchRetryAttempts: runtime_attributes.max_retries  # !UnknownRuntimeKey
-    queueArn: runtime_attributes.queue_arn
     zones: runtime_attributes.zones
   }
 }
@@ -434,7 +430,6 @@ task sv_stats {
     preemptible: runtime_attributes.preemptible_tries
     maxRetries: runtime_attributes.max_retries
     awsBatchRetryAttempts: runtime_attributes.max_retries  # !UnknownRuntimeKey
-    queueArn: runtime_attributes.queue_arn
     zones: runtime_attributes.zones
   }
 }

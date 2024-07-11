@@ -11,7 +11,6 @@
   "deepvariant.gpu": "Boolean",
   "deepvariant.default_runtime_attributes": {
     "max_retries": "Int",
-    "queue_arn": "String",
     "container_registry": "String",
     "preemptible_tries": "Int",
     "zones": "String"

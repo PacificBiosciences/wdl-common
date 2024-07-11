@@ -115,7 +115,6 @@ task cpg_pileup {
     preemptible: runtime_attributes.preemptible_tries
     maxRetries: runtime_attributes.max_retries
     awsBatchRetryAttempts: runtime_attributes.max_retries  # !UnknownRuntimeKey
-    queueArn: runtime_attributes.queue_arn
     zones: runtime_attributes.zones
   }
 }

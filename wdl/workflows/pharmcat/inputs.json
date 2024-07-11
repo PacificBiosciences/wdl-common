@@ -10,7 +10,6 @@
   "pharmcat.pharmcat_min_coverage": "Int",
   "pharmcat.default_runtime_attributes": {
     "max_retries": "Int",
-    "queue_arn": "String",
     "container_registry": "String",
     "gpuType": "String",
     "preemptible_tries": "Int",

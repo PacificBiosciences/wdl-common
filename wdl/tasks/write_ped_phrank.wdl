@@ -99,7 +99,6 @@ task write_ped_phrank {
     preemptible: runtime_attributes.preemptible_tries
     maxRetries: runtime_attributes.max_retries
     awsBatchRetryAttempts: runtime_attributes.max_retries
-    queueArn: runtime_attributes.queue_arn
     zones: runtime_attributes.zones
   }
 }
