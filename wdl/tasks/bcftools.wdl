@@ -68,17 +68,18 @@ task bcftools_stats_roh_small_variants {
 
     bcftools stats \
       ~{if threads > 1 then "--threads " + (threads - 1) else ""} \
+      --apply-filters .,PASS \
       --samples ~{sample_id} \
       ~{"--fasta-ref " + ref_fasta} \
       ~{vcf} \
-    > ~{sample_id}.~{ref_name}.vcf.stats.txt
+    > ~{sample_id}.~{ref_name}.small_variants.vcf.stats.txt
 
     # pull some top level stats
-    grep -w '^SN' ~{sample_id}.~{ref_name}.vcf.stats.txt | grep 'number of SNPs:' | cut -f4 > snv_count.txt
-    grep -w '^SN' ~{sample_id}.~{ref_name}.vcf.stats.txt | grep 'number of indels:' | cut -f4 > indel_count.txt
-    grep -w '^TSTV' ~{sample_id}.~{ref_name}.vcf.stats.txt | cut -f5 > tstv_ratio.txt
-    nHets=$(grep -w '^PSC' ~{sample_id}.~{ref_name}.vcf.stats.txt | cut -f6)
-    nNonRefHom=$(grep -w '^PSC' ~{sample_id}.~{ref_name}.vcf.stats.txt | cut -f5)
+    grep -w '^SN' ~{sample_id}.~{ref_name}.small_variants.vcf.stats.txt | grep 'number of SNPs:' | cut -f4 > snv_count.txt
+    grep -w '^SN' ~{sample_id}.~{ref_name}.small_variants.vcf.stats.txt | grep 'number of indels:' | cut -f4 > indel_count.txt
+    grep -w '^TSTV' ~{sample_id}.~{ref_name}.small_variants.vcf.stats.txt | cut -f5 > tstv_ratio.txt
+    nHets=$(grep -w '^PSC' ~{sample_id}.~{ref_name}.small_variants.vcf.stats.txt | cut -f6)
+    nNonRefHom=$(grep -w '^PSC' ~{sample_id}.~{ref_name}.small_variants.vcf.stats.txt | cut -f5)
     printf %.2f "$((10**2 * nHets / nNonRefHom))e-2" > hethom_ratio.txt  # hack for low precision float without bc
 
     bcftools roh \
@@ -102,7 +103,7 @@ task bcftools_stats_roh_small_variants {
   >>>
 
   output {
-    File  stats              = "~{sample_id}.~{ref_name}.vcf.stats.txt"
+    File  stats              = "~{sample_id}.~{ref_name}.small_variants.vcf.stats.txt"
     File  roh_out            = "~{sample_id}.~{ref_name}.bcftools_roh.out"
     File  roh_bed            = "~{sample_id}.~{ref_name}.roh.bed"
     String stat_SNV_count    = read_string("snv_count.txt")
@@ -254,8 +255,6 @@ task split_vcf_by_sample {
         ~{if threads > 1 then "--threads " + (threads - 1) else ""} \
         --samples ${sample_id} \
         --exclude-uncalled \
-        --exclude 'GT="ref"' \
-        --trim-alt-alleles \
         --output-type z \
         --output ${sample_id}.~{vcf_basename}.vcf.gz \
         ~{vcf}

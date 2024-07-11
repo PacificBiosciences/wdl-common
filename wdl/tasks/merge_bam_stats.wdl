@@ -118,7 +118,7 @@ task merge_bam_stats {
     cat << EOF > summary_stats.py
     import sys, pandas as pd
     df = pd.read_csv(sys.stdin, sep='\t', header=None)
-    print(f'{len(df)}\t{df[2].mean()}\t{df[2].median()}\t{df[3].mean()}\t{df[3].median()}')
+    print(f'{len(df)}\t{df[2].mean().round(2)}\t{df[2].median().round(2)}\t{df[3].mean().round(2)}\t{df[3].median().round(2)}')
     EOF
 
     python3 ./summary_stats.py \
@@ -126,10 +126,10 @@ task merge_bam_stats {
       > stats.txt
 
     cut -f1 stats.txt > num_reads.txt || echo "0" > num_reads.txt
-    cut -f2 stats.txt > read_length_mean.txt || echo "0.0" > read_length_mean.txt
-    cut -f3 stats.txt > read_length_median.txt || echo "0.0" > read_length_median.txt
-    cut -f4 stats.txt > read_quality_mean.txt || echo "0.0" > read_quality_mean.txt
-    cut -f5 stats.txt > read_quality_median.txt || echo "0.0" > read_quality_median.txt
+    cut -f2 stats.txt > read_length_mean.txt || echo "0.00" > read_length_mean.txt
+    cut -f3 stats.txt > read_length_median.txt || echo "0.00" > read_length_median.txt
+    cut -f4 stats.txt > read_quality_mean.txt || echo "0.00" > read_quality_mean.txt
+    cut -f5 stats.txt > read_quality_median.txt || echo "0.00" > read_quality_median.txt
 
     gzip ~{sample_id}.read_length_and_quality.tsv
   >>>
