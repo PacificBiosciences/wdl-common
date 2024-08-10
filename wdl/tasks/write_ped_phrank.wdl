@@ -37,7 +37,7 @@ task write_ped_phrank {
     File? family_json
     String? sex
 
-    String phenotypes
+    String? phenotypes
 
     RuntimeAttributes runtime_attributes
   }
@@ -69,25 +69,30 @@ task write_ped_phrank {
       echo -e "~{id}\t~{id}\t.\t.\t$SEX\t2" > ~{id}.ped
     fi
 
+    cat ~{id}.ped
+
     # ENV HPO_TERMS_TSV "/opt/data/hpo/hpoTerms.txt"
     # ENV HPO_DAG_TSV "/opt/data/hpo/hpoDag.txt"
     # ENV ENSEMBL_TO_HPO_TSV "/opt/data/hpo/ensembl.hpoPhenotype.tsv"
     # ENV ENSEMBL_TO_HGNC "/opt/data/genes/ensembl.hgncSymbol.tsv"
 
-    cat ~{id}.ped
-
-    calculate_phrank.py \
-      "${HPO_TERMS_TSV}" \
-      "${HPO_DAG_TSV}" \
-      "${ENSEMBL_TO_HPO_TSV}" \
-      "${ENSEMBL_TO_HGNC}" \
-      "~{phenotypes}" \
-      ~{id}_phrank.tsv
+    if ~{defined(phenotypes)}; then
+      echo "Calculating Phrank scores for ~{id} with phenotypes: ~{select_first([phenotypes])}"
+      calculate_phrank.py \
+        "${HPO_TERMS_TSV}" \
+        "${HPO_DAG_TSV}" \
+        "${ENSEMBL_TO_HPO_TSV}" \
+        "${ENSEMBL_TO_HGNC}" \
+        "~{select_first([phenotypes])}" \
+        ~{id}_phrank.tsv
+    else
+      echo "No phenotypes provided. Skipping Phrank calculation."
+    fi
   >>>
 
   output {
-    File pedigree      = "~{id}.ped"
-    File phrank_lookup = "~{id}_phrank.tsv"
+    File  pedigree      = "~{id}.ped"
+    File? phrank_lookup = "~{id}_phrank.tsv"
   }
 
   runtime {
