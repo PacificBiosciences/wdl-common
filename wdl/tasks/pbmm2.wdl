@@ -23,6 +23,9 @@ task pbmm2_align_wgs {
     ref_name: {
       name: "Reference name"
     }
+    strip_kinetics: {
+      name: "Strip kinetics tags"
+    }
     runtime_attributes: {
       name: "Runtime attribute structure"
     }
@@ -45,31 +48,19 @@ task pbmm2_align_wgs {
     File ref_index
     String ref_name
 
+    Boolean strip_kinetics = true
+
     RuntimeAttributes runtime_attributes
   }
 
   Int threads   = 24
   Int mem_gb    = ceil(threads * 4)
-  Int disk_size = ceil((size(bam, "GB") + size(ref_fasta, "GB")) * 3 + 20)
+  Int disk_size = ceil(size(bam, "GB") * 3 + size(ref_fasta, "GB") + 70)
 
   String movie = basename(bam, ".bam")
 
   command <<<
     set -euo pipefail
-
-    pbmm2 --version
-
-    pbmm2 align \
-      --num-threads ~{threads} \
-      --sort-memory 4G \
-      --preset HIFI \
-      --sample ~{sample_id} \
-      --log-level INFO \
-      --sort \
-      --unmapped \
-      ~{ref_fasta} \
-      ~{bam} \
-      ~{sample_id}.~{movie}.~{ref_name}.aligned.bam &
 
     cat << EOF > extract_read_length_and_qual.py
     import math, pysam
@@ -85,7 +76,62 @@ task pbmm2_align_wgs {
     EOF
 
     python3 ./extract_read_length_and_qual.py \
-      | gzip -c > ~{sample_id}.~{movie}.read_length_and_quality.tsv.gz
+      | gzip -c > ~{sample_id}.~{movie}.read_length_and_quality.tsv.gz &
+
+    samtools --version
+
+    ALIGNED=0
+
+    # is the BAM already aligned?
+    if (samtools view -H ~{bam} | grep "^@PG" | grep -qE "ID:(pbmm2|minimap2|ngmlr)"); then
+      echo "Input ~{basename(bam)} is already aligned.  Alignments and and haplotype tags will be stripped."
+      ALIGNED=1
+    fi
+
+    # does the BAM contain basemod tags?
+    if ! (samtools view ~{bam} | head -n 50 | cut -f12- | grep -qE "MM:|Mm:|ML:|Ml:"); then
+      echo "Input ~{basename(bam)} does not contain base modification tags.  cpg pileups will not be generated."
+    fi
+
+    # does the BAM contain kinetics tags?
+    if (samtools view ~{bam} | head -n 50 | cut -f12- | grep -qE "fi:|fp:|ri:|rp:"); then
+      echo "Input ~{basename(bam)} contains consensus kinetics tags."
+      if [ "~{strip_kinetics}" = true ]; then
+        echo "Kinetics will be stripped from the output."
+      fi
+    fi
+
+    pbmm2 --version
+
+    pbmm2 align \
+      --num-threads ~{threads} \
+      --sort-memory 4G \
+      --preset HIFI \
+      --sample ~{sample_id} \
+      --log-level INFO \
+      --sort \
+      ~{true='--strip' false='' strip_kinetics} \
+      --unmapped \
+      ~{ref_fasta} \
+      ~{bam} \
+      aligned.bam
+
+    if [ "$ALIGNED" -eq 1 ]; then
+      # remove haplotype tags
+      samtools view \
+        ~{if threads > 1 then "--threads " + (threads - 1) else ""} \
+        --bam --no-PG \
+        --remove-tag HP,PS,PC,SA \
+        -o ~{sample_id}.~{movie}.~{ref_name}.aligned.bam \
+        aligned.bam &&
+          \ rm aligned.bam
+      samtools index \
+        ~{if threads > 1 then "-@ " + (threads - 1) else ""} \
+        ~{sample_id}.~{movie}.~{ref_name}.aligned.bam
+    else
+      ln -s aligned.bam ~{sample_id}.~{movie}.~{ref_name}.aligned.bam
+      ln -s aligned.bam.bai ~{sample_id}.~{movie}.~{ref_name}.aligned.bam.bai
+    fi
 
     wait
   >>>
