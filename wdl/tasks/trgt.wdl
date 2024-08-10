@@ -135,7 +135,86 @@ task trgt {
   }
 
   runtime {
-    docker: "~{runtime_attributes.container_registry}/trgt@sha256:e626b0a102c11ad9d52bed5a5573052bc76560f3f02146c48babc4a76bc74f52"
+    docker: "~{runtime_attributes.container_registry}/trgt@sha256:b2165769aedf5548be14bf1aee6f33b86f7a20cb218991887da2f777368c924a"
+    cpu: threads
+    memory: mem_gb + " GB"
+    disk: disk_size + " GB"
+    disks: "local-disk " + disk_size + " HDD"
+    preemptible: runtime_attributes.preemptible_tries
+    maxRetries: runtime_attributes.max_retries
+    awsBatchRetryAttempts: runtime_attributes.max_retries  # !UnknownRuntimeKey
+    zones: runtime_attributes.zones
+  }
+}
+
+task trgt_merge {
+  meta {
+    description: "Merge results multiple samples analyzed with TRGT."
+  }
+
+  parameter_meta {
+    vcfs: {
+      name: "TRGT VCFs"
+    }
+    ref_fasta: {
+      name: "Reference FASTA"
+    }
+    ref_index: {
+      name: "Reference FASTA index"
+    }
+    out_prefix: {
+      name: "Output prefix"
+    }
+    runtime_attributes: {
+      name: "Runtime attribute structure"
+    }
+    merged_vcf: {
+      name: "Merged TRGT repeats VCF"
+    }
+    merged_vcf_index: {
+      name: "Merged TRGT repeats VCF index"
+    }
+  }
+
+  input {
+    Array[File] vcfs
+
+    File ref_fasta
+    File ref_index
+
+    String out_prefix
+
+    RuntimeAttributes runtime_attributes
+  }
+
+  Int threads   = 2
+  Int mem_gb    = 8
+  Int disk_size = ceil((size(vcfs, "GB") + size(ref_fasta, "GB")) * 2 + 20)
+
+  command <<<
+    set -euo pipefail
+
+    trgt --version
+
+    trgt merge \
+      --threads ~{threads} \
+      --vcf ~{sep=" " vcfs} \
+      --genome ~{ref_fasta} \
+      --output ~{out_prefix}.vcf.gz
+
+    bcftools index \
+      ~{if threads > 1 then "--threads " + (threads - 1) else ""} \
+      --tbi \
+      ~{out_prefix}.vcf.gz
+  >>>
+
+  output {
+    File merged_vcf       = "~{out_prefix}.vcf.gz"
+    File merged_vcf_index = "~{out_prefix}.vcf.gz.tbi"
+  }
+
+  runtime {
+    docker: "~{runtime_attributes.container_registry}/trgt@sha256:d70396273c20d74ea3ca05fc9480f9877d1665fdabd12d68423fab6fec5e0eb7"
     cpu: threads
     memory: mem_gb + " GB"
     disk: disk_size + " GB"
@@ -203,7 +282,7 @@ task coverage_dropouts {
   }
 
   runtime {
-    docker: "~{runtime_attributes.container_registry}/trgt@sha256:e626b0a102c11ad9d52bed5a5573052bc76560f3f02146c48babc4a76bc74f52"
+    docker: "~{runtime_attributes.container_registry}/trgt@sha256:d70396273c20d74ea3ca05fc9480f9877d1665fdabd12d68423fab6fec5e0eb7"
     cpu: threads
     memory: mem_gb + " GB"
     disk: disk_size + " GB"
