@@ -55,7 +55,7 @@ task pbstarphase_diplotype {
     RuntimeAttributes runtime_attributes
   }
 
-  Int threads   = 8
+  Int threads   = 2
   Int mem_gb    = 16
   Int disk_size = ceil(size(phased_vcf, "GB") * 2 + size(ref_fasta, "GB") + 50)
 
@@ -65,7 +65,6 @@ task pbstarphase_diplotype {
     pbstarphase --version
 
     pbstarphase diplotype \
-      --threads ~{threads} \
       --database /opt/pbstarphase_db.json.gz \
       --reference ~{ref_fasta} \
       --vcf ~{phased_vcf} \
@@ -80,7 +79,7 @@ task pbstarphase_diplotype {
   }
 
   runtime {
-    docker: "~{runtime_attributes.container_registry}/pbstarphase@sha256:578f99e86e977436420187bfa0ad820067e574cbfb00a5461c773c12e1ba29ad"
+    docker: "~{runtime_attributes.container_registry}/pbstarphase@sha256:db23f9722ee0cb7770cf944887ea995d9634d20e0be943345f8e3a4fee538ee2"
     cpu: threads
     memory: mem_gb + " GB"
     disk: disk_size + " GB"
