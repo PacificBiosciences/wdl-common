@@ -11,9 +11,6 @@ workflow deepvariant {
     sample_id: {
       name: "Sample ID"
     }
-    sex: {
-      name: "Sample sex"
-    }
     aligned_bams: {
       name: "Aligned BAM"
     }
