@@ -46,7 +46,7 @@ workflow backend_configuration {
     RuntimeAttributes gcp_spot_runtime_attributes = {
       "backend": "GCP",
       "preemptible_tries": 3,
-      "max_retries": 0,
+      "max_retries": 3,
       "zones": select_first([zones]),
       "gpuType": select_first([gpuType, ""]),
       "container_registry": select_first([container_registry, default_container_registry])
