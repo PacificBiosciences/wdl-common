@@ -55,7 +55,7 @@ task merge_bam_stats {
   Int disk_size = 10
 
   command <<<
-    zcat ~{sep = " " bam_stats} > ~{sample_id}.read_length_and_quality.tsv
+    zcat ~{sep=" " bam_stats} > ~{sample_id}.read_length_and_quality.tsv
 
     cat << EOF > bin_length.py
     import sys, pandas as pd
