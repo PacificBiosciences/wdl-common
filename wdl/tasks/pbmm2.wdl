@@ -91,7 +91,7 @@ task pbmm2_align_wgs {
 
     # does the BAM contain basemod tags?
     if ! (samtools view ~{bam} | head -n 50 | cut -f12- | grep -qE "MM:|Mm:|ML:|Ml:"); then
-      echo "Input ~{basename(bam)} does not contain base modification tags.  cpg pileups will not be generated."
+      echo "Input ~{basename(bam)} does not contain base modification tags.  5mCpG pileups will not be generated."
     fi
 
     # does the BAM contain kinetics tags?
