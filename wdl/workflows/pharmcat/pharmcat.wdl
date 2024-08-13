@@ -21,7 +21,7 @@ workflow pharmcat {
       name: "Phased small variant VCF index"
     }
     input_tsvs: {
-      name: "Pangu, StarPhase, and HiFiHLA TSVs"
+      name: "StarPhase and HiFiHLA TSVs"
     }
     ref_fasta: {
       name: "Reference FASTA"
@@ -29,35 +29,38 @@ workflow pharmcat {
     ref_index: {
       name: "Reference FASTA index"
     }
+    pharmcat_version: {
+      name: "PharmCAT Version"
+    }
     pharmcat_positions: {
-      name: "Pharmcat positions VCF"
+      name: "PharmCAT positions VCF"
     }
     pharmcat_positions_index: {
-      name: "Pharmcat positions VCF index"
+      name: "PharmCAT positions VCF index"
     }
     pharmcat_min_coverage: {
-      name: "Pharmcat minimum coverage"
+      name: "PharmCAT minimum coverage"
     }
     default_runtime_attributes: {
       name: "Runtime attribute structure"
     }
     pharmcat_missing_pgx_vcf: {
-      name: "Pharmcat missing PGx VCF"
+      name: "PharmCAT missing PGx VCF"
     }
     pharmcat_preprocessed_filtered_vcf: {
-      name: "Pharmcat preprocessed filtered VCF"
+      name: "PharmCAT preprocessed filtered VCF"
     }
     pharmcat_match_json: {
-      name: "Pharmcat match JSON"
+      name: "PharmCAT match JSON"
     }
     pharmcat_phenotype_json: {
-      name: "Pharmcat phenotype JSON"
+      name: "PharmCAT phenotype JSON"
     }
     pharmcat_report_html: {
-      name: "Pharmcat report HTML"
+      name: "PharmCAT report HTML"
     }
     pharmcat_report_json: {
-      name: "Pharmcat report JSON"
+      name: "PharmCAT report JSON"
     }
   }
 
@@ -71,6 +74,7 @@ workflow pharmcat {
     File ref_fasta
     File ref_index
 
+    String pharmcat_version
     File pharmcat_positions
     File pharmcat_positions_index
     Int pharmcat_min_coverage
@@ -78,7 +82,7 @@ workflow pharmcat {
     RuntimeAttributes default_runtime_attributes
   }
 
-  String pharmcat_docker = (if (default_runtime_attributes.backend == "AWS-HealthOmics") then default_runtime_attributes.container_registry else "pgkb") + "/pharmcat:2.12.0"
+  String pharmcat_docker = (if (default_runtime_attributes.backend == "AWS-HealthOmics") then default_runtime_attributes.container_registry else "pgkb") + "/pharmcat:~{pharmcat_version}"
 
   call pharmcat_preprocess {
     input:
@@ -140,13 +144,13 @@ task pharmcat_preprocess {
       name: "Reference FASTA index"
     }
     pharmcat_positions: {
-      name: "Pharmcat positions VCF"
+      name: "PharmCAT positions VCF"
     }
     pharmcat_positions_index: {
-      name: "Pharmcat positions VCF index"
+      name: "PharmCAT positions VCF index"
     }
     pharmcat_docker: {
-      name: "Pharmcat Docker image"
+      name: "PharmCAT Docker image"
     }
     runtime_attributes: {
       name: "Runtime attribute structure"
@@ -332,22 +336,22 @@ task run_pharmcat {
       name: "Pangu, StarPhase, and/or HiFiHLA TSVs"
     }
     pharmcat_docker: {
-      name: "Pharmcat Docker image"
+      name: "PharmCAT Docker image"
     }
     runtime_attributes: {
       name: "Runtime attribute structure"
     }
     pharmcat_match_json: {
-      name: "Pharmcat match JSON"
+      name: "PharmCAT match JSON"
     }
     pharmcat_phenotype_json: {
-      name: "Pharmcat phenotype JSON"
+      name: "PharmCAT phenotype JSON"
     }
     pharmcat_report_html: {
-      name: "Pharmcat report HTML"
+      name: "PharmCAT report HTML"
     }
     pharmcat_report_json: {
-      name: "Pharmcat report JSON"
+      name: "PharmCAT report JSON"
     }
   }
 
