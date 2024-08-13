@@ -154,11 +154,11 @@ task pbsv_call {
         | echo "^#|""$(</dev/stdin)")
 
       for svsig in ~{sep=" " svsigs}; do
-        svsig_basename=$(basename "$svsig" .svsig.gz)
+        filtered_svsig=$(mktemp XXXXXXXXXX.svsig.gz)
         gunzip -c "$svsig" \
           | grep -P "$pattern" \
-          | bgzip -c > "${svsig_basename}.regions.svsig.gz" \
-          && echo "${svsig_basename}.regions.svsig.gz" >> svsigs.fofn
+          | bgzip -c > "${filtered_svsig}" \
+          && echo "${filtered_svsig}" >> svsigs.fofn
       done
     else
       cp ~{write_lines(svsigs)} svsigs.fofn
