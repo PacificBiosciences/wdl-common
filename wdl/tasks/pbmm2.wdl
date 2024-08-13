@@ -77,6 +77,7 @@ task pbmm2_align_wgs {
 
     python3 ./extract_read_length_and_qual.py \
       | gzip -c > ~{sample_id}.~{movie}.read_length_and_quality.tsv.gz &
+    BAM_STATS_PID=$!
 
     samtools --version
 
@@ -133,7 +134,7 @@ task pbmm2_align_wgs {
       ln -s aligned.bam.bai ~{sample_id}.~{movie}.~{ref_name}.aligned.bam.bai
     fi
 
-    wait
+    wait ${BAM_STATS_PID}
   >>>
 
   output {
