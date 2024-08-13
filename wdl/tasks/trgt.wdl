@@ -156,6 +156,9 @@ task trgt_merge {
     vcfs: {
       name: "TRGT VCFs"
     }
+    vcf_indices: {
+      name: "TRGT VCF indices"
+    }
     ref_fasta: {
       name: "Reference FASTA"
     }
@@ -178,6 +181,7 @@ task trgt_merge {
 
   input {
     Array[File] vcfs
+    Array[File] vcf_indices
 
     File ref_fasta
     File ref_index
@@ -197,7 +201,6 @@ task trgt_merge {
     trgt --version
 
     trgt merge \
-      --threads ~{threads} \
       --vcf ~{sep=" " vcfs} \
       --genome ~{ref_fasta} \
       --output ~{out_prefix}.vcf.gz
