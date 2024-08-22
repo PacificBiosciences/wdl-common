@@ -125,13 +125,14 @@ task pbmm2_align_wgs {
         --remove-tag HP,PS,PC,SA \
         -o ~{sample_id}.~{movie}.~{ref_name}.aligned.bam \
         aligned.bam &&
-          \ rm aligned.bam
+          \ rm aligned.bam &&
+          \ rm aligned.bam.bai
       samtools index \
         ~{if threads > 1 then "-@ " + (threads - 1) else ""} \
         ~{sample_id}.~{movie}.~{ref_name}.aligned.bam
     else
-      ln -s aligned.bam ~{sample_id}.~{movie}.~{ref_name}.aligned.bam
-      ln -s aligned.bam.bai ~{sample_id}.~{movie}.~{ref_name}.aligned.bam.bai
+      mv --verbose aligned.bam ~{sample_id}.~{movie}.~{ref_name}.aligned.bam
+      mv --verbose aligned.bam.bai ~{sample_id}.~{movie}.~{ref_name}.aligned.bam.bai
     fi
 
     wait ${BAM_STATS_PID}
