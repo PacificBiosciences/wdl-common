@@ -219,6 +219,12 @@ task split_vcf_by_sample {
     vcf_index: {
       name: "VCF index"
     }
+    split_vcf_names: {
+      name: "Split VCF names"
+    }
+    split_vcf_index_names: {
+      name: "Split VCF index names"
+    }
     runtime_attributes: {
       name: "Runtime attribute structure"
     }
@@ -234,6 +240,9 @@ task split_vcf_by_sample {
     Array[String] sample_ids
     File vcf
     File vcf_index
+
+    Array[String] split_vcf_names
+    Array[String] split_vcf_index_names
 
     RuntimeAttributes runtime_attributes
   }
@@ -267,8 +276,8 @@ task split_vcf_by_sample {
   >>>
 
   output {
-    Array[File] split_vcfs        = read_lines("vcf.list")
-    Array[File] split_vcf_indices = read_lines("index.list")
+    Array[File] split_vcfs        = split_vcf_names
+    Array[File] split_vcf_indices = split_vcf_index_names
   }
 
   runtime {
