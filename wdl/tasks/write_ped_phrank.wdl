@@ -14,9 +14,6 @@ task write_ped_phrank {
     family_json: {
       name: "Family JSON struct"
     }
-    sex: {
-      name: "Sample sex if passing a single sample."
-    }
     phenotypes: {
       name: "Comma delimited string of HPO terms for phenotypes."
     }
@@ -34,69 +31,50 @@ task write_ped_phrank {
   input {
     String id
 
-    File? family_json
-    String? sex
+    Array[Map[String, String]] family_json
 
-    String? phenotypes
+    String phenotypes
 
     RuntimeAttributes runtime_attributes
   }
 
-  Int threads   = 2
-  Int mem_gb    = 4
-  Int disk_size = 20
+  Int threads   = 1
+  Int mem_gb    = 2
+  Int disk_size = 1
 
   command <<<
     set -euo pipefail
 
-    if ~{defined(family_json)}; then
-      echo "Family JSON file provided. Converting to PED format."
-      json2ped.py ~{family_json} > ~{id}.ped
-    else
-      echo "Family JSON file not provided. Creating single sample PED file."
-      # shellcheck disable=SC2194
-      case ~{if defined(sex) then sex else "."} in
-        MALE | M | male | m | Male)
-          SEX="1"
-          ;;
-        FEMALE | F | female | f | Female)
-          SEX="2"
-          ;;
-        *)
-          SEX="."
-          ;;
-      esac
-      echo -e "~{id}\t~{id}\t.\t.\t$SEX\t2" > ~{id}.ped
-    fi
+    json2ped.py ~{write_json(family_json)} ~{id} > ~{id}.ped
 
     cat ~{id}.ped
+
+    # clean up common potential issues with phenotypes string
+    PHENOTYPES="~{phenotypes}"
+    PHENOTYPES="${PHENOTYPES// /}"   # Remove spaces
+    PHENOTYPES="${PHENOTYPES//;/,}"  # Replace semicolons with commas
 
     # ENV HPO_TERMS_TSV "/opt/data/hpo/hpoTerms.txt"
     # ENV HPO_DAG_TSV "/opt/data/hpo/hpoDag.txt"
     # ENV ENSEMBL_TO_HPO_TSV "/opt/data/hpo/ensembl.hpoPhenotype.tsv"
     # ENV ENSEMBL_TO_HGNC "/opt/data/genes/ensembl.hgncSymbol.tsv"
 
-    if ~{defined(phenotypes)}; then
-      echo "Calculating Phrank scores for ~{id} with phenotypes: ~{select_first([phenotypes])}"
-      calculate_phrank.py \
-        "${HPO_TERMS_TSV}" \
-        "${HPO_DAG_TSV}" \
-        "${ENSEMBL_TO_HPO_TSV}" \
-        "${ENSEMBL_TO_HGNC}" \
-        "~{select_first([phenotypes])}" \
-        ~{id}_phrank.tsv
-    else
-      echo "No phenotypes provided. Skipping Phrank calculation."
-    fi
+    calculate_phrank.py \
+      "${HPO_TERMS_TSV}" \
+      "${HPO_DAG_TSV}" \
+      "${ENSEMBL_TO_HPO_TSV}" \
+      "${ENSEMBL_TO_HGNC}" \
+      "${PHENOTYPES}" \
+      ~{id}_phrank.tsv
   >>>
 
   output {
-    File  pedigree      = "~{id}.ped"
-    File? phrank_lookup = "~{id}_phrank.tsv"
+    File pedigree      = "~{id}.ped"
+    File phrank_lookup = "~{id}_phrank.tsv"
   }
 
   runtime {
-    docker: "~{runtime_attributes.container_registry}/wgs_tertiary@sha256:8fc134fdf0665e14a67bf7a8b4b63f5ae891a370a1d50c9eec2059702440a3e2"
+    docker: "~{runtime_attributes.container_registry}/wgs_tertiary@sha256:6925e50c6850d8886a9cbe0d984ec8eaea205cca280309820688b60dfc65b1d4"
     cpu: threads
     memory: mem_gb + " GB"
     disk: disk_size + " GB"
