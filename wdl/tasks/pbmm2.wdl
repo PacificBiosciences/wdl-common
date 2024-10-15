@@ -69,7 +69,10 @@ task pbmm2_align_wgs {
     bamin = pysam.AlignmentFile('~{bam}', check_sq=False)
     pysam.set_verbosity(save)  # restore warnings
     for b in bamin:
-      errorrate = 1.0 - b.get_tag("rq")
+      errorrate = 1.0 - b.get_tag('rq')
+      if math.isnan(b.get_tag('rq')):
+        print(f'Warning: read {b.query_name} has tag rq:f:nan.', file=sys.stderr)
+        continue
       readqv = MAX_QV if errorrate == 0 else math.floor(-10 * math.log10(errorrate))
       print(f"{b.query_name.split('/')[0]}\t{b.query_name}\t{len(b.query_sequence)}\t{readqv}")
     bamin.close()
