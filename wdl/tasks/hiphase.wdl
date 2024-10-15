@@ -109,8 +109,7 @@ task hiphase {
       --reference ~{ref_fasta} \
       --summary-file ~{sample_id}.~{ref_name}.hiphase.stats.tsv \
       --blocks-file ~{sample_id}.~{ref_name}.hiphase.blocks.tsv \
-      --haplotag-file ~{sample_id}.~{ref_name}.hiphase.haplotags.tsv \
-      --global-realignment-cputime 300
+      --haplotag-file ~{sample_id}.~{ref_name}.hiphase.haplotags.tsv
 
     gzip ~{sample_id}.~{ref_name}.hiphase.haplotags.tsv
 
@@ -147,7 +146,7 @@ task hiphase {
   }
 
   runtime {
-    docker: "~{runtime_attributes.container_registry}/hiphase@sha256:3c5029aaa38e8a6b0f9b042086691aac3747ccee60045e3e7531ae72059546b2"
+    docker: "~{runtime_attributes.container_registry}/hiphase@sha256:47fe7d42aea6b1b2e6d3c7401bc35a184464c3f647473d0525c00f3c968b40ad"
     cpu: threads
     memory: mem_gb + " GB"
     disk: disk_size + " GB"
