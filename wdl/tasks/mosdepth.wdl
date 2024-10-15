@@ -35,11 +35,14 @@ task mosdepth {
     region_bed_index: {
       name: "Depth BED index"
     }
-    inferred_sex: {
-      name: "Sex inferred from chrY depth"
+    depth_distribution_plot: {
+      name: "Depth distribution plot"
     }
     stat_mean_depth: {
       name: "Mean depth"
+    }
+    inferred_sex: {
+      name: "Sex inferred from chrY depth"
     }
   }
 
@@ -76,6 +79,26 @@ task mosdepth {
       ~{out_prefix} \
       ~{aligned_bam}
 
+    # plot depth distribution
+    cat << EOF > plot_depth_distribution.py
+    import sys, pandas as pd, seaborn as sns, matplotlib.pyplot as plt
+    sns.set_theme(style='darkgrid')
+    data = pd.read_csv(sys.stdin, sep='\t', header=None, names=('depth', 'proportion'))
+    fig, axs = plt.subplots(1, 1, figsize=(7, 5))
+    sns.lineplot(data=data, x='depth', y='proportion')
+    axs.set_xlabel('Depth')
+    axs.set_ylabel('Proportion of genome at or above depth')
+    axs.set_title('~{sample_id} depth distribution')
+    plt.tight_layout()
+    plt.savefig('~{sample_id}.depth_distribution.png')
+    EOF
+
+    awk -v OFS=$'\t' \
+      '$1=="total" && $3>0.0 {print $2, $3}' \
+      ~{out_prefix}.mosdepth.global.dist.txt \
+    | sort -n \
+    | python3 ./plot_depth_distribution.py
+
     # normalize output names
     if [ ! -f ~{sample_id}.~{ref_name}.mosdepth.summary.txt ]; then
       mv ~{out_prefix}.mosdepth.summary.txt ~{sample_id}.~{ref_name}.mosdepth.summary.txt
@@ -83,6 +106,7 @@ task mosdepth {
       mv ~{out_prefix}.regions.bed.gz.csi ~{sample_id}.~{ref_name}.regions.bed.gz.csi
     fi
 
+    # get the mean depth
     cat << EOF > get_mean_depth.py
     import pandas as pd
     df = pd.read_csv('~{sample_id}.~{ref_name}.mosdepth.summary.txt', sep='\t')
@@ -91,26 +115,28 @@ task mosdepth {
 
     python3 ./get_mean_depth.py > mean_depth.txt || echo "0.0" > mean_depth.txt
 
+    # infer the sex from normalized chrY depth
     cat << EOF > infer_chrY.py
     import pandas as pd
     df = pd.read_csv('~{sample_id}.~{ref_name}.mosdepth.summary.txt', sep='\t')
     chrA_depth = df[df['chrom'].str.match(r'^(chr)?\d{1,2}$')]['mean'].mean()
     chrY_depth = df[df['chrom'].str.match(r'^(chr)?Y$')]['mean'].mean()
     if chrA_depth == 0:
-      print("")
+      print('')
     else:
-      print("MALE" if chrY_depth/chrA_depth > float(~{max_norm_female_chrY_depth}) else "FEMALE")
+      print('MALE' if chrY_depth/chrA_depth > float(~{max_norm_female_chrY_depth}) else 'FEMALE')
     EOF
 
     python3 ./infer_chrY.py > inferred_sex.txt || echo "" > inferred_sex.txt
   >>>
 
   output {
-    File   summary          = "~{sample_id}.~{ref_name}.mosdepth.summary.txt"
-    File   region_bed       = "~{sample_id}.~{ref_name}.regions.bed.gz"
-    File   region_bed_index = "~{sample_id}.~{ref_name}.regions.bed.gz.csi"
-    String inferred_sex     = if (infer_sex) then read_string("inferred_sex.txt") else ""
-    String stat_mean_depth  = read_string("mean_depth.txt")
+    File   summary                 = "~{sample_id}.~{ref_name}.mosdepth.summary.txt"
+    File   region_bed              = "~{sample_id}.~{ref_name}.regions.bed.gz"
+    File   region_bed_index        = "~{sample_id}.~{ref_name}.regions.bed.gz.csi"
+    File   depth_distribution_plot = "~{sample_id}.depth_distribution.png"
+    String stat_mean_depth         = read_string("mean_depth.txt")
+    String inferred_sex            = if (infer_sex) then read_string("inferred_sex.txt") else ""
   }
 
   runtime {
