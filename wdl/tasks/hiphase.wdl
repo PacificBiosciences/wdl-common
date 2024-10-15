@@ -68,8 +68,11 @@ task hiphase {
     stat_phase_block_ng50: {
       name: "Phase block N50"
     }
-    stat_mapped_fraction: {
-      name: "Mapped fraction"
+    stat_mapped_read_count: {
+      name: "Mapped read count"
+    }
+    stat_mapped_percent: {
+      name: "Mapped read percent"
     }
   }
 
@@ -113,13 +116,15 @@ task hiphase {
 
     gzip ~{sample_id}.~{ref_name}.hiphase.haplotags.tsv
 
-    # pull the fraction of mapped reads
+    # pull the count and percent of mapped reads
     samtools flagstat \
       ~{if threads > 1 then "--threads " + (threads - 1) else ""} \
       --output-fmt json \
       ~{sample_id}.~{ref_name}.haplotagged.bam \
-      | jq '.["QC-passed reads"]["primary mapped %"]' \
-      > mapped_fraction.txt
+      | jq '.["QC-passed reads"]["primary mapped %", "primary mapped"]' \
+      > mapping_stats.txt
+    sed -n '1p' mapping_stats.txt > mapped_percent.txt
+    sed -n '2p' mapping_stats.txt > mapped_read_count.txt
 
     # pull the phased basepairs and phase block N50
     cat << EOF > get_tsv_stats.py
@@ -133,16 +138,17 @@ task hiphase {
   >>>
 
   output {
-    Array [File] phased_vcfs        = phased_vcf_names
-    Array [File] phased_vcf_indices = phased_vcf_index_names
-    File   haplotagged_bam          = "~{sample_id}.~{ref_name}.haplotagged.bam"
-    File   haplotagged_bam_index    = "~{sample_id}.~{ref_name}.haplotagged.bam.bai"
-    File   phase_stats              = "~{sample_id}.~{ref_name}.hiphase.stats.tsv"
-    File   phase_blocks             = "~{sample_id}.~{ref_name}.hiphase.blocks.tsv"
-    File   phase_haplotags          = "~{sample_id}.~{ref_name}.hiphase.haplotags.tsv.gz"
-    String stat_phased_basepairs    = read_string("phased_basepairs.txt")
-    String stat_phase_block_ng50    = read_string("phase_block_ng50.txt")
-    String stat_mapped_fraction     = read_string("mapped_fraction.txt")
+    Array  [File] phased_vcfs          = phased_vcf_names
+    Array  [File] phased_vcf_indices   = phased_vcf_index_names
+    File   haplotagged_bam             = "~{sample_id}.~{ref_name}.haplotagged.bam"
+    File   haplotagged_bam_index       = "~{sample_id}.~{ref_name}.haplotagged.bam.bai"
+    File   phase_stats                 = "~{sample_id}.~{ref_name}.hiphase.stats.tsv"
+    File   phase_blocks                = "~{sample_id}.~{ref_name}.hiphase.blocks.tsv"
+    File   phase_haplotags             = "~{sample_id}.~{ref_name}.hiphase.haplotags.tsv.gz"
+    String stat_phased_basepairs       = read_string("phased_basepairs.txt")
+    String stat_phase_block_ng50       = read_string("phase_block_ng50.txt")
+    String stat_mapped_read_count      = read_string("mapped_read_count.txt")
+    String stat_mapped_percent         = read_string("mapped_percent.txt")
   }
 
   runtime {
