@@ -75,11 +75,12 @@ task merge_bam_stats {
 
     cat << EOF > plot_length.py
     import sys, pandas as pd, seaborn as sns, matplotlib.pyplot as plt
+    sns.set_theme(style='darkgrid')
     df = pd.read_csv(sys.stdin, sep='\t', header=None, names=['read_length', 'count', 'base_pairs'])
     fig, axs = plt.subplots(1, 1, figsize=(7, 5))
     sns.histplot(data=df, x='read_length', weights='count', bins=40, ax=axs)
     axs.set_xlabel('read length (bp)'); axs.set_ylabel('read count')
-    axs.set_title('~{sample_id}')
+    axs.set_title('~{sample_id} read length histogram')
     plt.tight_layout()
     plt.savefig('~{sample_id}.read_length_histogram.png')
     EOF
@@ -104,11 +105,12 @@ task merge_bam_stats {
 
     cat << EOF > plot_quality.py
     import sys, pandas as pd, seaborn as sns, matplotlib.pyplot as plt
+    sns.set_theme(style='darkgrid')
     df = pd.read_csv(sys.stdin, sep='\t', header=None, names=['read_quality', 'count', 'base_pairs'])
     fig, axs = plt.subplots(1, 1, figsize=(7, 5))
     sns.histplot(data=df, x='read_quality', weights='count', bins=60, ax=axs)
     axs.set_xlabel('read quality'); axs.set_ylabel('read count')
-    axs.set_title('~{sample_id}')
+    axs.set_title('~{sample_id} read quality histogram')
     plt.tight_layout()
     plt.savefig('~{sample_id}.read_quality_histogram.png')
     EOF
