@@ -51,6 +51,7 @@ task glnexus {
   command <<<
     set -euo pipefail
 
+    # we use a custom config file with DeepVariant_unfiltered base, but with required_dp: 1
     cat << EOF > config.yml
     unifier_config:
       min_AQ1: 0
@@ -110,27 +111,27 @@ task glnexus {
       --config ./config.yml \
       ~{"--bed " + regions_bed} \
       ~{sep=" " gvcfs} \
-    > ~{cohort_id}.~{ref_name}.deepvariant.glnexus.bcf
+    > ~{cohort_id}.~{ref_name}.small_variants.bcf
 
     bcftools view \
       ~{if threads > 1 then "--threads " + (threads - 1) else ""} \
       --output-type z \
-      --output-file ~{cohort_id}.~{ref_name}.deepvariant.glnexus.vcf.gz \
-      ~{cohort_id}.~{ref_name}.deepvariant.glnexus.bcf
+      --output-file ~{cohort_id}.~{ref_name}.small_variants.vcf.gz \
+      ~{cohort_id}.~{ref_name}.small_variants.bcf
 
     bcftools index \
       ~{if threads > 1 then "--threads " + (threads - 1) else ""} \
       --tbi \
-      ~{cohort_id}.~{ref_name}.deepvariant.glnexus.vcf.gz
+      ~{cohort_id}.~{ref_name}.small_variants.vcf.gz
 
     # cleanup
     rm -rf ~{cohort_id}.~{ref_name}.GLnexus.DB
-    rm -rf ~{cohort_id}.~{ref_name}.deepvariant.glnexus.bcf
+    rm -rf ~{cohort_id}.~{ref_name}.small_variants.bcf
   >>>
 
   output {
-    File vcf       = "~{cohort_id}.~{ref_name}.deepvariant.glnexus.vcf.gz"
-    File vcf_index = "~{cohort_id}.~{ref_name}.deepvariant.glnexus.vcf.gz.tbi"
+    File vcf       = "~{cohort_id}.~{ref_name}.small_variants.vcf.gz"
+    File vcf_index = "~{cohort_id}.~{ref_name}.small_variants.vcf.gz.tbi"
   }
 
   runtime {

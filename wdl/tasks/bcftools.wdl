@@ -99,13 +99,13 @@ task bcftools_stats_roh_small_variants {
           print('\t'.join([vals[2], vals[3], vals[4], vals[7]]))
     EOF
 
-    python3 ./roh_bed.py > ~{sample_id}.~{ref_name}.roh.bed
+    python3 ./roh_bed.py > ~{sample_id}.~{ref_name}.bcftools_roh.bed
   >>>
 
   output {
     File  stats              = "~{sample_id}.~{ref_name}.small_variants.vcf.stats.txt"
     File  roh_out            = "~{sample_id}.~{ref_name}.bcftools_roh.out"
-    File  roh_bed            = "~{sample_id}.~{ref_name}.roh.bed"
+    File  roh_bed            = "~{sample_id}.~{ref_name}.bcftools_roh.bed"
     String stat_SNV_count    = read_string("snv_count.txt")
     String stat_INDEL_count  = read_string("indel_count.txt")
     String stat_TSTV_ratio   = read_string("tstv_ratio.txt")

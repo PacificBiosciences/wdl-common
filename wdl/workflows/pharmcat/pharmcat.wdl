@@ -8,6 +8,9 @@ workflow pharmcat {
   }
 
   parameter_meta {
+    sample_id: {
+      name: "Sample ID"
+    }
     haplotagged_bam: {
       name: "Haplotagged BAM"
     }
@@ -65,6 +68,7 @@ workflow pharmcat {
   }
 
   input {
+    String sample_id
     File haplotagged_bam
     File haplotagged_bam_index
     File phased_vcf
@@ -111,6 +115,7 @@ workflow pharmcat {
       preprocessed_filtered_vcf = filter_preprocessed_vcf.filtered_vcf,
       input_tsvs                = input_tsvs,
       pharmcat_docker           = pharmcat_docker,
+      out_prefix                = "~{sample_id}.pharmcat",
       runtime_attributes        = default_runtime_attributes
   }
 
@@ -338,6 +343,9 @@ task run_pharmcat {
     pharmcat_docker: {
       name: "PharmCAT Docker image"
     }
+    out_prefix: {
+      name: "Output prefix"
+    }
     runtime_attributes: {
       name: "Runtime attribute structure"
     }
@@ -361,6 +369,8 @@ task run_pharmcat {
 
     String pharmcat_docker
 
+    String out_prefix
+
     RuntimeAttributes runtime_attributes
   }
 
@@ -368,7 +378,7 @@ task run_pharmcat {
   Int mem_gb    = 4
   Int disk_size = ceil(size(preprocessed_filtered_vcf, "GB") * 2 + 20)
 
-  String out_prefix = basename(preprocessed_filtered_vcf, ".vcf")
+  String pharmcat_basename = basename(preprocessed_filtered_vcf, ".vcf")
 
   command <<<
     set -euo pipefail
@@ -381,6 +391,12 @@ task run_pharmcat {
       -reporterJson \
       "$([ -s merged.tsv ] && echo '-po merged.tsv')" \
       -o .
+    
+    # rename output files
+    mv "~{pharmcat_basename}.match.json" "~{out_prefix}.match.json"
+    mv "~{pharmcat_basename}.phenotype.json" "~{out_prefix}.phenotype.json"
+    mv "~{pharmcat_basename}.report.html" "~{out_prefix}.report.html"
+    mv "~{pharmcat_basename}.report.json" "~{out_prefix}.report.json"
   >>>
 
   output {
