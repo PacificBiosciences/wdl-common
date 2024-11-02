@@ -79,32 +79,40 @@ task mosdepth {
       ~{out_prefix} \
       ~{aligned_bam}
 
-    # plot depth distribution
-    cat << EOF > plot_depth_distribution.py
-    import sys, pandas as pd, seaborn as sns, matplotlib.pyplot as plt
-    sns.set_theme(style='darkgrid')
-    data = pd.read_csv(sys.stdin, sep='\t', header=None, names=('depth', 'proportion'))
-    fig, axs = plt.subplots(1, 1, figsize=(7, 5))
-    sns.lineplot(data=data, x='depth', y='proportion')
-    axs.set_xlabel('Depth')
-    axs.set_ylabel('Proportion of genome at or above depth')
-    axs.set_title('~{sample_id} depth distribution')
-    plt.tight_layout()
-    plt.savefig('~{sample_id}.depth_distribution.png')
-    EOF
-
-    awk -v OFS=$'\t' \
-      '$1=="total" && $3>0.0 {print $2, $3}' \
-      ~{out_prefix}.mosdepth.global.dist.txt \
-    | sort -n \
-    | python3 ./plot_depth_distribution.py
-
     # normalize output names
     if [ ! -f ~{sample_id}.~{ref_name}.mosdepth.summary.txt ]; then
-      mv ~{out_prefix}.mosdepth.summary.txt ~{sample_id}.~{ref_name}.mosdepth.summary.txt
-      mv ~{out_prefix}.regions.bed.gz ~{sample_id}.~{ref_name}.regions.bed.gz
-      mv ~{out_prefix}.regions.bed.gz.csi ~{sample_id}.~{ref_name}.regions.bed.gz.csi
+      mv --verbose ~{out_prefix}.mosdepth.summary.txt ~{sample_id}.~{ref_name}.mosdepth.summary.txt
+      mv --verbose ~{out_prefix}.regions.bed.gz ~{sample_id}.~{ref_name}.regions.bed.gz
+      mv --verbose ~{out_prefix}.regions.bed.gz.csi ~{sample_id}.~{ref_name}.regions.bed.gz.csi
     fi
+
+    # plot depth distribution
+    cat << EOF > plot_depth_distribution.py
+    import pandas as pd, seaborn as sns, matplotlib.pyplot as plt, numpy as np
+    sns.set_theme(style='darkgrid')
+    df = pd.read_csv(
+      '~{sample_id}.~{ref_name}.regions.bed.gz',
+      sep='\t',
+      names=['chr', 'start', 'end', 'depth'],
+      compression='gzip',
+    )
+    xmax = int(2*df[df['depth'] > 0]['depth'].mode().values[0])  # 2x non-zero mode
+    df = df[(df['depth'] <= xmax)]
+    fig, axs = plt.subplots(2, 1, figsize=(8,6))
+    sns.histplot(df, x='depth', bins=xmax-1, stat='proportion', ax=axs[0])
+    axs[0].set_xlim(0, xmax)
+    axs[0].set_xlabel('')
+    axs[0].set_xticklabels([])
+    sns.ecdfplot(df, x='depth', complementary=True, ax=axs[1])
+    axs[1].set_xlim(0, xmax)
+    axs[1].set_yticks(np.arange(0,1.1,0.1))
+    axs[1].set_ylabel('Proportion >= depth')
+    plt.suptitle('~{sample_id}.~{ref_name}\nAligned depth distribution')
+    fig.tight_layout()
+    plt.savefig('~{sample_id}.~{ref_name}.depth_distribution.png')
+    EOF
+
+    python3 ./plot_depth_distribution.py
 
     # get the mean depth
     cat << EOF > get_mean_depth.py
@@ -134,7 +142,7 @@ task mosdepth {
     File   summary                 = "~{sample_id}.~{ref_name}.mosdepth.summary.txt"
     File   region_bed              = "~{sample_id}.~{ref_name}.regions.bed.gz"
     File   region_bed_index        = "~{sample_id}.~{ref_name}.regions.bed.gz.csi"
-    File   depth_distribution_plot = "~{sample_id}.depth_distribution.png"
+    File   depth_distribution_plot = "~{sample_id}.~{ref_name}.depth_distribution.png"
     String stat_mean_depth         = read_string("mean_depth.txt")
     String inferred_sex            = if (infer_sex) then read_string("inferred_sex.txt") else ""
   }

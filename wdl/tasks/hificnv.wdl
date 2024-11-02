@@ -140,8 +140,8 @@ task hificnv {
     EOF
 
     bcftools query \
-      -i 'FILTER="PASS" & SVTYPE="DUP"' \
-      -f '%INFO/SVLEN\n' \
+      --include 'FILTER="PASS" & SVTYPE="DUP"' \
+      --format '%INFO/SVLEN\n' \
       ~{sample_id}.~{ref_name}.hificnv.vcf.gz \
       > DUP_lengths.txt
     if [ -s DUP_lengths.txt ]; then
@@ -154,8 +154,8 @@ task hificnv {
     fi
 
     bcftools query \
-      -i 'FILTER="PASS" & SVTYPE="DEL"' \
-      -f '%INFO/SVLEN\n' \
+      --include 'FILTER="PASS" & SVTYPE="DEL"' \
+      --format '%INFO/SVLEN\n' \
       ~{sample_id}.~{ref_name}.hificnv.vcf.gz \
       > DEL_lengths.txt
     if [ -s DEL_lengths.txt ]; then
@@ -181,7 +181,7 @@ task hificnv {
   }
 
   runtime {
-    docker: "~{runtime_attributes.container_registry}/hificnv@sha256:c9e2d07240299cfff655ae9a96eb604934879128bd7aed9e60af6619f6c36b9a"
+    docker: "~{runtime_attributes.container_registry}/hificnv@sha256:c4764a70c8c2028edb1cdb4352997269947c5076ddd1aeaeef6c5076c630304d"
     cpu: threads
     memory: mem_gb + " GB"
     disk: disk_size + " GB"

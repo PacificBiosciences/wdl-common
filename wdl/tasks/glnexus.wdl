@@ -125,8 +125,7 @@ task glnexus {
       ~{cohort_id}.~{ref_name}.small_variants.vcf.gz
 
     # cleanup
-    rm -rf ~{cohort_id}.~{ref_name}.GLnexus.DB
-    rm -rf ~{cohort_id}.~{ref_name}.small_variants.bcf
+    rm --recursive --force --verbose ~{cohort_id}.~{ref_name}.GLnexus.DB ~{cohort_id}.~{ref_name}.small_variants.bcf
   >>>
 
   output {

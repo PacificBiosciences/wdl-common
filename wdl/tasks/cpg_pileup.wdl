@@ -35,11 +35,20 @@ task cpg_pileup {
     combined_bed: {
       name: "5mCpG BED for all alignments"
     }
+    combined_bed_index: {
+      name: "5mCpG BED index for all alignments"
+    }
     hap1_bed: {
       name: "5mCpG BED for HP1 alignments"
     }
+    hap1_bed_index: {
+      name: "5mCpG BED index for HP1 alignments"
+    }
     hap2_bed: {
       name: "5mCpG BED for HP2 alignments"
+    }
+    hap2_bed_index: {
+      name: "5mCpG BED index for HP2 alignments"
     }
     combined_bw: {
       name: "5mCpG bigWig for all alignments"
@@ -57,7 +66,7 @@ task cpg_pileup {
     File haplotagged_bam_index
 
     Int min_mapq     = 1
-    Int min_coverage = 10
+    Int min_coverage = 4
 
     String out_prefix
 
@@ -86,18 +95,25 @@ task cpg_pileup {
       --model "$PILEUP_MODEL_DIR"/pileup_calling_model.v1.tflite
 
     # count the number of CpG sites in each bed file
-    wc -l < ~{out_prefix}.hap1.bed > ~{out_prefix}.hap1.bed.count \
-      || echo "0" > ~{out_prefix}.hap1.bed.count
-    wc -l < ~{out_prefix}.hap2.bed > ~{out_prefix}.hap2.bed.count \
-      || echo "0" > ~{out_prefix}.hap2.bed.count
-    wc -l < ~{out_prefix}.combined.bed > ~{out_prefix}.combined.bed.count \
-      || echo "0" > ~{out_prefix}.combined.bed.count
+    wc --lines < ~{out_prefix}.hap1.bed > ~{out_prefix}.hap1.bed.count || echo "0" > ~{out_prefix}.hap1.bed.count
+    wc --lines < ~{out_prefix}.hap2.bed > ~{out_prefix}.hap2.bed.count || echo "0" > ~{out_prefix}.hap2.bed.count
+    wc --lines < ~{out_prefix}.combined.bed > ~{out_prefix}.combined.bed.count || echo "0" > ~{out_prefix}.combined.bed.count
+
+    bgzip ~{out_prefix}.combined.bed
+    tabix --preset bed ~{out_prefix}.combined.bed.gz
+    bgzip ~{out_prefix}.hap1.bed
+    tabix --preset bed ~{out_prefix}.hap1.bed.gz
+    bgzip ~{out_prefix}.hap2.bed
+    tabix --preset bed ~{out_prefix}.hap2.bed.gz
   >>>
 
   output {
-    File   combined_bed            = "~{out_prefix}.combined.bed"
-    File   hap1_bed                = "~{out_prefix}.hap1.bed"
-    File   hap2_bed                = "~{out_prefix}.hap2.bed"
+    File   combined_bed            = "~{out_prefix}.combined.bed.gz"
+    File   combined_bed_index      = "~{out_prefix}.combined.bed.gz.tbi"
+    File   hap1_bed                = "~{out_prefix}.hap1.bed.gz"
+    File   hap1_bed_index          = "~{out_prefix}.hap1.bed.gz.tbi"
+    File   hap2_bed                = "~{out_prefix}.hap2.bed.gz"
+    File   hap2_bed_index          = "~{out_prefix}.hap2.bed.gz.tbi"
     File   combined_bw             = "~{out_prefix}.combined.bw"
     File   hap1_bw                 = "~{out_prefix}.hap1.bw"
     File   hap2_bw                 = "~{out_prefix}.hap2.bw"

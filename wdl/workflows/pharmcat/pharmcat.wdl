@@ -273,14 +273,14 @@ task filter_preprocessed_vcf {
 
     bcftools --version
 
-    ln -s ~{preprocessed_vcf} .
+    ln --symbolic --verbose ~{preprocessed_vcf} .
     bcftools index --tbi ~{preprocessed_vcf_basename}
 
     # get a list of the regions overlapping variants
     bcftools query \
       --format '%CHROM\t%POS0\t%END\n' \
       ~{preprocessed_vcf} \
-      > targeted.bed
+    > targeted.bed
 
     mosdepth --version
 

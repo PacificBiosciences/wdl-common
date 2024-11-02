@@ -17,12 +17,6 @@ task merge_bam_stats {
     runtime_attributes: {
       name: "Runtime attribute structure"
     }
-    read_length_histogram: {
-      name: "Read Length Summary"
-    }
-    read_quality_histogram: {
-      name: "Read Quality Summary"
-    }
     read_length_and_quality: {
       name: "Read Length and Quality"
     }
@@ -57,65 +51,26 @@ task merge_bam_stats {
   command <<<
     zcat ~{sep=" " bam_stats} > ~{sample_id}.read_length_and_quality.tsv
 
-    cat << EOF > bin_length.py
-    import sys, pandas as pd
-    df = pd.read_csv(sys.stdin, sep='\t', header=None)
-    # bin by read length, 0-40000, by 1000
-    bins = pd.interval_range(start=0, end=40000, freq=1000, closed='left')
-    df[0] = pd.cut(df[2], bins=bins, labels=bins.left)
-    grouped = df.groupby(0)[2].agg(['count', 'sum'])
-    # print the count and sum of read lengths for each bin
-    for index, row in grouped.iterrows():
-      print(f'{index.left}\t{row["count"]}\t{row["sum"]}')
-    EOF
-
-    python3 ./bin_length.py \
-      < ~{sample_id}.read_length_and_quality.tsv \
-      > ~{sample_id}.read_length_histogram.tsv
-
-    cat << EOF > plot_length.py
+    cat << EOF > plot_length_and_quality.py
     import sys, pandas as pd, seaborn as sns, matplotlib.pyplot as plt
     sns.set_theme(style='darkgrid')
-    df = pd.read_csv(sys.stdin, sep='\t', header=None, names=['read_length', 'count', 'base_pairs'])
-    fig, axs = plt.subplots(1, 1, figsize=(7, 5))
-    sns.histplot(data=df, x='read_length', weights='count', bins=40, ax=axs)
-    axs.set_xlabel('read length (bp)'); axs.set_ylabel('read count')
-    axs.set_title('~{sample_id} read length histogram')
-    plt.tight_layout()
+    df = pd.read_csv(sys.stdin, sep='\t', header=None, names=['movie', 'read_name', 'read_length', 'read_quality'])
+    fig, ax = plt.subplots(figsize=(8, 6))
+    sns.histplot(data=df, x='read_quality', hue='movie', bins=range(0, 61), multiple="stack", ax=ax)
+    ax.set_xlabel('Phred-scaled read quality'); ax.set_xlim(0,60);
+    ax.set_ylabel('read count'); ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: f'{int(x/1000)}k' if x >= 1000 else f'{int(x)}'));
+    ax.set_title('~{sample_id}\nRead quality histogram'); fig.tight_layout();
+    plt.savefig('~{sample_id}.read_quality_histogram.png')
+    fig, ax = plt.subplots(figsize=(8, 6))
+    sns.histplot(data=df, x='read_length', hue='movie', bins=range(0, 40000, 1000), multiple="stack", ax=ax)
+    ax.set_xlim(0,40000); ax.set_xlabel('read length (bp)');
+    ax.set_ylabel('read count'); ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: f'{int(x/1000)}k' if x >= 1000 else f'{int(x)}'));
+    ax.set_title('~{sample_id}\nRead length histogram'); fig.tight_layout();
     plt.savefig('~{sample_id}.read_length_histogram.png')
     EOF
 
-    python3 ./plot_length.py < ~{sample_id}.read_length_histogram.tsv
 
-    cat << EOF > bin_quality.py
-    import sys, pandas as pd
-    df = pd.read_csv(sys.stdin, sep='\t', header=None)
-    # bin by quality score, 0-60
-    bins = pd.interval_range(start=0, end=61, freq=1, closed='left')
-    df[0] = pd.cut(df[3], bins=bins, labels=bins.left, include_lowest=True)
-    grouped = df.groupby(0)[2].agg(['count', 'sum'])
-    # print the count and sum of read lengths for each quality score
-    for index, row in grouped.iterrows():
-      print(f'{index.left}\t{row["count"]}\t{row["sum"]}')
-    EOF
-
-    python3 ./bin_quality.py \
-      < ~{sample_id}.read_length_and_quality.tsv \
-      > ~{sample_id}.read_quality_histogram.tsv
-
-    cat << EOF > plot_quality.py
-    import sys, pandas as pd, seaborn as sns, matplotlib.pyplot as plt
-    sns.set_theme(style='darkgrid')
-    df = pd.read_csv(sys.stdin, sep='\t', header=None, names=['read_quality', 'count', 'base_pairs'])
-    fig, axs = plt.subplots(1, 1, figsize=(7, 5))
-    sns.histplot(data=df, x='read_quality', weights='count', bins=60, ax=axs)
-    axs.set_xlabel('read quality'); axs.set_ylabel('read count')
-    axs.set_title('~{sample_id} read quality histogram')
-    plt.tight_layout()
-    plt.savefig('~{sample_id}.read_quality_histogram.png')
-    EOF
-
-    python3 ./plot_quality.py < ~{sample_id}.read_quality_histogram.tsv
+    python3 ./plot_length_and_quality.py < ~{sample_id}.read_length_and_quality.tsv
 
     cat << EOF > summary_stats.py
     import sys, pandas as pd
@@ -123,9 +78,7 @@ task merge_bam_stats {
     print(f'{len(df)}\t{df[2].mean().round(2)}\t{df[2].median().round(2)}\t{df[3].mean().round(2)}\t{df[3].median().round(2)}')
     EOF
 
-    python3 ./summary_stats.py \
-      < ~{sample_id}.read_length_and_quality.tsv \
-      > stats.txt
+    python3 ./summary_stats.py < ~{sample_id}.read_length_and_quality.tsv > stats.txt
 
     cut -f1 stats.txt > num_reads.txt || echo "0" > num_reads.txt
     cut -f2 stats.txt > read_length_mean.txt || echo "0.00" > read_length_mean.txt
@@ -138,8 +91,6 @@ task merge_bam_stats {
 
   output {
     File   read_length_and_quality  = "~{sample_id}.read_length_and_quality.tsv.gz"
-    File   read_length_histogram    = "~{sample_id}.read_length_histogram.tsv"
-    File   read_quality_histogram   = "~{sample_id}.read_quality_histogram.tsv"
     File   read_length_plot         = "~{sample_id}.read_length_histogram.png"
     File   read_quality_plot        = "~{sample_id}.read_quality_histogram.png"
     String stat_num_reads           = read_string("num_reads.txt")

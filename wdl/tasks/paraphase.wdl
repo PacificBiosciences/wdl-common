@@ -69,7 +69,7 @@ task paraphase {
 
     # tarball the VCFs if they exist
     if ls ~{sample_id}_paraphase_vcfs/*.vcf &> /dev/null; then
-      tar zcvf ~{sample_id}.paraphase_vcfs.tar.gz ~{sample_id}_paraphase_vcfs/*.vcf
+      tar --gzip --create --verbose --file ~{sample_id}.paraphase_vcfs.tar.gz ~{sample_id}_paraphase_vcfs/*.vcf
     fi
   >>>
 

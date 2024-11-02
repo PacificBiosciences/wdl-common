@@ -117,12 +117,12 @@ task trgt {
     bcftools view --no-header --exclude-uncalled \
       ~{if threads > 1 then "--threads " + (threads - 1) else ""} \
       ~{out_prefix}.trgt.sorted.vcf.gz \
-      | wc -l > genotyped_count.txt || echo "0" > genotyped_count.txt
+      | wc --lines > genotyped_count.txt || echo "0" > genotyped_count.txt
 
     bcftools view --no-header --uncalled \
       ~{if threads > 1 then "--threads " + (threads - 1) else ""} \
       ~{out_prefix}.trgt.sorted.vcf.gz \
-      | wc -l > uncalled_count.txt || echo "0" > uncalled_count.txt
+    | wc --lines > uncalled_count.txt || echo "0" > uncalled_count.txt
   >>>
 
   output {

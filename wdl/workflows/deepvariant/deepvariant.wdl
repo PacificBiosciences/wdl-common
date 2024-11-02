@@ -248,10 +248,10 @@ task deepvariant_make_examples {
         --gvcf nonvariant_site_tfrecords/~{sample_id}.gvcf.tfrecord@~{total_deepvariant_tasks}.gz \
         --task {}
 
-    tar -zcvf ~{sample_id}.~{task_start_index}.example_tfrecords.tar.gz example_tfrecords \
-      && rm -rf example_tfrecords
-    tar -zcvf ~{sample_id}.~{task_start_index}.nonvariant_site_tfrecords.tar.gz nonvariant_site_tfrecords \
-      && rm -rf nonvariant_site_tfrecords
+    tar --gzip --create --verbose --file ~{sample_id}.~{task_start_index}.example_tfrecords.tar.gz example_tfrecords \
+    && rm --recursive --force --verbose example_tfrecords
+    tar --gzip --create --verbose --file ~{sample_id}.~{task_start_index}.nonvariant_site_tfrecords.tar.gz nonvariant_site_tfrecords \
+    && rm --recursive --force --verbose nonvariant_site_tfrecords
   >>>
 
   output {
@@ -325,12 +325,12 @@ task deepvariant_call_variants_cpu {
     set -euo pipefail
 
     while read -r tfrecord_tar || [[ -n "${tfrecord_tar}" ]]; do
-      tar -zxvf "${tfrecord_tar}"
+      tar --no-same-owner --gzip --extract --verbose --file "${tfrecord_tar}"
     done < ~{write_lines(example_tfrecord_tars)}
 
     if ~{defined(custom_deepvariant_model_tar)}; then
-      mkdir -p ./custom_deepvariant_model
-      tar --no-same-owner -zxvf ~{custom_deepvariant_model_tar} -C ./custom_deepvariant_model
+      mkdir --parents ./custom_deepvariant_model
+      tar --no-same-owner zxvf ~{custom_deepvariant_model_tar} -C ./custom_deepvariant_model
       DEEPVARIANT_MODEL="./custom_deepvariant_model"
     else
       DEEPVARIANT_MODEL="/opt/models/pacbio"
@@ -345,10 +345,10 @@ task deepvariant_call_variants_cpu {
       --examples "example_tfrecords/~{sample_id}.examples.tfrecord@~{total_deepvariant_tasks}.gz" \
       --checkpoint "${DEEPVARIANT_MODEL}"
 
-    tar -zcvf ~{sample_id}.~{ref_name}.call_variants_output.tar.gz ~{sample_id}.~{ref_name}.call_variants_output*.tfrecord.gz \
-      && rm ~{sample_id}.~{ref_name}.call_variants_output*.tfrecord.gz \
-      && rm -rf example_tfrecords \
-      && rm -rf ./custom_deepvariant_model
+    tar --gzip --create --verbose --file ~{sample_id}.~{ref_name}.call_variants_output.tar.gz ~{sample_id}.~{ref_name}.call_variants_output*.tfrecord.gz \
+    && rm --verbose ~{sample_id}.~{ref_name}.call_variants_output*.tfrecord.gz \
+    && rm --recursive --force --verbose example_tfrecords \
+    && rm --recursive --force --verbose ./custom_deepvariant_model
   >>>
 
   output {
@@ -421,12 +421,12 @@ task deepvariant_call_variants_gpu {
     set -euo pipefail
 
     while read -r tfrecord_tar || [[ -n "${tfrecord_tar}" ]]; do
-      tar -zxvf "${tfrecord_tar}"
+      tar --no-same-owner --gzip --extract --verbose --file "${tfrecord_tar}"
     done < ~{write_lines(example_tfrecord_tars)}
 
     if ~{defined(custom_deepvariant_model_tar)}; then
-      mkdir -p ./custom_deepvariant_model
-      tar --no-same-owner -zxvf ~{custom_deepvariant_model_tar} -C ./custom_deepvariant_model
+      mkdir --parents ./custom_deepvariant_model
+      tar --no-same-owner zxvf ~{custom_deepvariant_model_tar} -C ./custom_deepvariant_model
       DEEPVARIANT_MODEL="./custom_deepvariant_model"
     else
       DEEPVARIANT_MODEL="/opt/models/pacbio"
@@ -441,10 +441,10 @@ task deepvariant_call_variants_gpu {
       --examples "example_tfrecords/~{sample_id}.examples.tfrecord@~{total_deepvariant_tasks}.gz" \
       --checkpoint "${DEEPVARIANT_MODEL}"
 
-    tar -zcvf ~{sample_id}.~{ref_name}.call_variants_output.tar.gz ~{sample_id}.~{ref_name}.call_variants_output*.tfrecord.gz \
-      && rm ~{sample_id}.~{ref_name}.call_variants_output*.tfrecord.gz \
-      && rm -rf example_tfrecords \
-      && rm -rf ./custom_deepvariant_model
+    tar --gzip --create --verbose --file ~{sample_id}.~{ref_name}.call_variants_output.tar.gz ~{sample_id}.~{ref_name}.call_variants_output*.tfrecord.gz \
+    && rm --verbose ~{sample_id}.~{ref_name}.call_variants_output*.tfrecord.gz \
+    && rm --recursive --force --verbose example_tfrecords \
+    && rm --recursive --force --verbose ./custom_deepvariant_model
   >>>
 
   output {
@@ -457,6 +457,7 @@ task deepvariant_call_variants_gpu {
     memory: mem_gb + " GB"
     disk: disk_size + " GB"
     disks: "local-disk " + disk_size + " HDD"
+    bootDiskSizeGb: 30  # !UnknownRuntimeKey
     preemptible: runtime_attributes.preemptible_tries
     maxRetries: runtime_attributes.max_retries
     awsBatchRetryAttempts: runtime_attributes.max_retries  # !UnknownRuntimeKey
@@ -538,10 +539,10 @@ task deepvariant_postprocess_variants {
   command <<<
     set -euo pipefail
 
-    tar -zxvf "~{tfrecords_tar}"
+    tar --no-same-owner --gzip --extract --verbose --file "~{tfrecords_tar}"
 
     while read -r nonvariant_site_tfrecord_tar || [[ -n "${nonvariant_site_tfrecord_tar}" ]]; do
-      tar -zxvf "${nonvariant_site_tfrecord_tar}"
+      tar --no-same-owner --gzip --extract --verbose --file "${nonvariant_site_tfrecord_tar}"
     done < ~{write_lines(nonvariant_site_tfrecord_tars)}
 
     echo "DeepVariant version: $VERSION"
@@ -563,13 +564,13 @@ task deepvariant_postprocess_variants {
     --output-file ~{sample_id}.~{ref_name}.small_variants.passing.vcf.gz \
     ~{sample_id}.~{ref_name}.small_variants.vcf.gz
 
-    mv ~{sample_id}.~{ref_name}.small_variants.passing.vcf.gz ~{sample_id}.~{ref_name}.small_variants.vcf.gz
+    mv --verbose ~{sample_id}.~{ref_name}.small_variants.passing.vcf.gz ~{sample_id}.~{ref_name}.small_variants.vcf.gz
     bcftools index --tbi --force \
       ~{if threads > 1 then "--threads " + (threads - 1) else ""} \
       ~{sample_id}.~{ref_name}.small_variants.vcf.gz
 
-    rm ~{sample_id}.~{ref_name}.call_variants_output*.tfrecord.gz \
-      && rm -rf nonvariant_site_tfrecords
+    rm --verbose ~{sample_id}.~{ref_name}.call_variants_output*.tfrecord.gz \
+    && rm --recursive --force --verbose nonvariant_site_tfrecords
   >>>
 
   output {

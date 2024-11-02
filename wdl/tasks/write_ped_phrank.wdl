@@ -1,6 +1,7 @@
 version 1.0
 
 import "../structs.wdl"
+import "../../../humanwgs_structs.wdl"
 
 task write_ped_phrank {
   meta {
@@ -9,13 +10,19 @@ task write_ped_phrank {
 
   parameter_meta {
     id: {
-      name: "Family ID if passing a Family JSON struct. Sample ID if passing a single sample."
+      name: "Family ID if passing a Family struct. Sample ID if passing a single sample."
     }
-    family_json: {
-      name: "Family JSON struct"
+    family: {
+      name: "Family struct (required if passing a Family)."
+    }
+    sex: {
+      name: "Sample sex (required if passing a single sample)."
     }
     phenotypes: {
       name: "Comma delimited string of HPO terms for phenotypes."
+    }
+    disk_size: {
+      name: "Disk size in GB"
     }
     runtime_attributes: {
       name: "Runtime attribute structure"
@@ -31,21 +38,41 @@ task write_ped_phrank {
   input {
     String id
 
-    Array[Map[String, String]] family_json
+    Family? family
+    String? sex
 
     String phenotypes
+
+    Float disk_size = 1
 
     RuntimeAttributes runtime_attributes
   }
 
   Int threads   = 1
   Int mem_gb    = 2
-  Int disk_size = 1
 
   command <<<
     set -euo pipefail
 
-    json2ped.py ~{write_json(family_json)} ~{id} > ~{id}.ped
+    if ~{defined(family)}; then
+      echo "Family struct provided. Converting to PED format."
+      json2ped.py ~{write_json(select_all([family]))} > ~{id}.ped
+    else
+      echo "Family struct not provided. Creating single sample PED file."
+      # shellcheck disable=SC2194
+      case ~{if defined(sex) then sex else "."} in
+        MALE | M | male | m | Male)
+          SEX="1"
+          ;;
+        FEMALE | F | female | f | Female)
+          SEX="2"
+          ;;
+        *)
+          SEX="."
+          ;;
+      esac
+      echo -e "~{id}\t~{id}\t.\t.\t$SEX\t2" > ~{id}.ped
+    fi
 
     cat ~{id}.ped
 
@@ -74,7 +101,7 @@ task write_ped_phrank {
   }
 
   runtime {
-    docker: "~{runtime_attributes.container_registry}/wgs_tertiary@sha256:6925e50c6850d8886a9cbe0d984ec8eaea205cca280309820688b60dfc65b1d4"
+    docker: "~{runtime_attributes.container_registry}/wgs_tertiary@sha256:128086b938d2602c06f4e5f88a8b7ead70933e3a43237e49cd505d141bb31785"
     cpu: threads
     memory: mem_gb + " GB"
     disk: disk_size + " GB"

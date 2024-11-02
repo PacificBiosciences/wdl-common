@@ -58,7 +58,7 @@ task pbsv_discover {
   }
 
   runtime {
-    docker: "~{runtime_attributes.container_registry}/pbsv@sha256:7626286e07dd185ca698efc80bd0d26cd3a139fe19781dfde5b6d07e895673cd"
+    docker: "~{runtime_attributes.container_registry}/pbsv@sha256:3a8529853c1e214809dcdaacac0079de70d0c037b41b43bb8ba7c3fc5f783e26"
     cpu: threads
     memory: mem_gb + " GB"
     disk: disk_size + " GB"
@@ -155,13 +155,13 @@ task pbsv_call {
 
       for svsig in ~{sep=" " svsigs}; do
         filtered_svsig=$(mktemp XXXXXXXXXX.svsig.gz)
-        gunzip -c "$svsig" \
-          | grep -P "$pattern" \
-          | bgzip -c > "${filtered_svsig}" \
-          && echo "${filtered_svsig}" >> svsigs.fofn
+        gunzip --stdout "$svsig" \
+        | grep --perl-regexp "$pattern" \
+        | bgzip --stdout > "${filtered_svsig}" \
+        && echo "${filtered_svsig}" >> svsigs.fofn
       done
     else
-      cp ~{write_lines(svsigs)} svsigs.fofn
+      cp --verbose ~{write_lines(svsigs)} svsigs.fofn
     fi
 
     pbsv --version
@@ -181,7 +181,7 @@ task pbsv_call {
 
     tabix --version
 
-    tabix -p vcf "~{out_prefix}.vcf.gz"
+    tabix --preset vcf "~{out_prefix}.vcf.gz"
   >>>
 
   output {
@@ -190,7 +190,7 @@ task pbsv_call {
   }
 
   runtime {
-    docker: "~{runtime_attributes.container_registry}/pbsv@sha256:7626286e07dd185ca698efc80bd0d26cd3a139fe19781dfde5b6d07e895673cd"
+    docker: "~{runtime_attributes.container_registry}/pbsv@sha256:3a8529853c1e214809dcdaacac0079de70d0c037b41b43bb8ba7c3fc5f783e26"
     cpu: threads
     memory: "~{mem_gb} GB"
     disk: disk_size + " GB"

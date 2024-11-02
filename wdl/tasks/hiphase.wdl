@@ -121,8 +121,8 @@ task hiphase {
       ~{if threads > 1 then "--threads " + (threads - 1) else ""} \
       --output-fmt json \
       ~{sample_id}.~{ref_name}.haplotagged.bam \
-      | jq '.["QC-passed reads"]["primary mapped %", "primary mapped"]' \
-      > mapping_stats.txt
+    | jq '.["QC-passed reads"]["primary mapped %", "primary mapped"]' \
+    > mapping_stats.txt
     sed -n '1p' mapping_stats.txt > mapped_percent.txt
     sed -n '2p' mapping_stats.txt > mapped_read_count.txt
 
@@ -135,20 +135,69 @@ task hiphase {
 
     python3 get_tsv_stats.py basepairs_per_block_sum > phased_basepairs.txt
     python3 get_tsv_stats.py block_ng50 > phase_block_ng50.txt
+
+    cat << EOF > get_mapping_stats.py
+    import sys, math, pysam
+    save = pysam.set_verbosity(0)  # suppress index error
+    with pysam.AlignmentFile('-', 'rb', check_sq=False) as infile:
+      pysam.set_verbosity(save)  # restore warnings
+      for s in infile:
+        if not s.is_unmapped:
+          print(f"{s.query_name}\t{'supp' if s.is_supplementary else 'prim'}\t{s.mapping_quality}\t{s.get_tag('mg'):.4f}")
+    EOF
+
+    cat << EOF > plot_mapq.py
+    import sys, pandas as pd, matplotlib.pyplot as plt, seaborn as sns
+    sns.set_style('darkgrid')
+    df = pd.read_csv(sys.argv[1], header=1, names=['query_name', 'alignment_type', 'mapq', 'mg'], sep='\t', compression='gzip')
+    fig, axs = plt.subplots(2, 1, figsize=(8, 6))
+    sns.histplot(df, x='mapq', hue='alignment_type', element="step", kde=False, bins=60, ax=axs[0])
+    sns.histplot(df, x='mapq', hue='alignment_type', element="step", kde=False, bins=60, ax=axs[1], legend=False)
+    sns.move_legend(axs[0], 'upper left')
+    axs[0].axes.set_xlim(0, 60)
+    axs[0].axes.set_xlabel('')
+    axs[0].axes.set_xticklabels([])
+    axs[1].axes.set_xlim(0, 60)
+    axs[1].axes.set_yscale('log')
+    axs[1].axes.set_ylabel('log10(Count)')
+    fig.suptitle('~{sample_id}.~{ref_name}\nMAPQ distribution')
+    plt.tight_layout()
+    plt.savefig('~{sample_id}.~{ref_name}.mapq_distribution.png')
+    fig, axs = plt.subplots(2, 1, figsize=(8, 6))
+    sns.histplot(df, x='mg', hue='alignment_type', element='step', kde=False, bins=60, ax=axs[0])
+    sns.histplot(df, x='mg', hue='alignment_type', element='step', kde=False, bins=60, ax=axs[1], legend=False)
+    sns.move_legend(axs[0], 'upper left')
+    axs[0].set_xlim(70, 100)
+    axs[0].axes.set_xlabel('')
+    axs[0].axes.set_xticklabels([])
+    axs[1].set_xlim(70, 100)
+    axs[1].axes.set_yscale('log')
+    axs[1].axes.set_ylabel('log10(Count)')
+    plt.suptitle('~{sample_id}.~{ref_name}\nGap-compressed sequence identity distribution')
+    fig.tight_layout()
+    plt.savefig('~{sample_id}.~{ref_name}.mg_distribution.png')
+    EOF
+
+    python3 get_mapping_stats.py < ~{sample_id}.~{ref_name}.haplotagged.bam \
+    | gzip --stdout > ~{sample_id}.~{ref_name}.alignment_stats.tsv.gz
+    
+    python3 plot_mapq.py ~{sample_id}.~{ref_name}.alignment_stats.tsv.gz
   >>>
 
   output {
-    Array  [File] phased_vcfs          = phased_vcf_names
-    Array  [File] phased_vcf_indices   = phased_vcf_index_names
-    File   haplotagged_bam             = "~{sample_id}.~{ref_name}.haplotagged.bam"
-    File   haplotagged_bam_index       = "~{sample_id}.~{ref_name}.haplotagged.bam.bai"
-    File   phase_stats                 = "~{sample_id}.~{ref_name}.hiphase.stats.tsv"
-    File   phase_blocks                = "~{sample_id}.~{ref_name}.hiphase.blocks.tsv"
-    File   phase_haplotags             = "~{sample_id}.~{ref_name}.hiphase.haplotags.tsv.gz"
-    String stat_phased_basepairs       = read_string("phased_basepairs.txt")
-    String stat_phase_block_ng50       = read_string("phase_block_ng50.txt")
-    String stat_mapped_read_count      = read_string("mapped_read_count.txt")
-    String stat_mapped_percent         = read_string("mapped_percent.txt")
+    Array  [File] phased_vcfs        = phased_vcf_names
+    Array  [File] phased_vcf_indices = phased_vcf_index_names
+    File   haplotagged_bam           = "~{sample_id}.~{ref_name}.haplotagged.bam"
+    File   haplotagged_bam_index     = "~{sample_id}.~{ref_name}.haplotagged.bam.bai"
+    File   phase_stats               = "~{sample_id}.~{ref_name}.hiphase.stats.tsv"
+    File   phase_blocks              = "~{sample_id}.~{ref_name}.hiphase.blocks.tsv"
+    File   phase_haplotags           = "~{sample_id}.~{ref_name}.hiphase.haplotags.tsv.gz"
+    String stat_phased_basepairs     = read_string("phased_basepairs.txt")
+    String stat_phase_block_ng50     = read_string("phase_block_ng50.txt")
+    String stat_mapped_read_count    = read_string("mapped_read_count.txt")
+    String stat_mapped_percent       = read_string("mapped_percent.txt")
+    File   mapq_distribution_plot    = "~{sample_id}.~{ref_name}.mapq_distribution.png"
+    File   mg_distribution_plot      = "~{sample_id}.~{ref_name}.mg_distribution.png"
   }
 
   runtime {
