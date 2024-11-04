@@ -106,7 +106,7 @@ task mosdepth {
     sns.ecdfplot(df, x='depth', complementary=True, ax=axs[1])
     axs[1].set_xlim(0, xmax)
     axs[1].set_yticks(np.arange(0,1.1,0.1))
-    axs[1].set_ylabel('Proportion >= depth')
+    axs[1].set_ylabel('Proportion ≥ depth')
     plt.suptitle('~{sample_id}.~{ref_name}\nAligned depth distribution')
     fig.tight_layout()
     plt.savefig('~{sample_id}.~{ref_name}.depth_distribution.png')
