@@ -1,4 +1,4 @@
-<h1 align="center"><img width="300px" src="images/logo_wdl_workflows.svg"/></h1>
+<h1 align="center"><img width="300px" src="./images/logo_wdl_workflows.svg" alt="PacBio Pipelines - Common Tasks and Workflows"/></h1>
 
 <h1 align="center">PacBio Pipelines<br/>Common Tasks and Workflows</h1>
 
