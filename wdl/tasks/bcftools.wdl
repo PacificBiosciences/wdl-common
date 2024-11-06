@@ -533,6 +533,12 @@ task sv_stats {
     > stat_INV.txt || echo "0" > stat_INV.txt
     bcftools view \
       --no-header \
+      --include 'FILTER="InvBreakpoint" & SVTYPE="BND"' \
+      "~{vcf}" \
+    | wc --lines \
+    > stat_INVBND.txt || echo "0" > stat_INVBND.txt
+    bcftools view \
+      --no-header \
       --include 'FILTER="PASS" & SVTYPE="BND"' \
       "~{vcf}" \
     | wc --lines \
@@ -540,11 +546,12 @@ task sv_stats {
   >>>
 
   output {
-    String stat_sv_DUP_count = read_string("stat_DUP.txt")
-    String stat_sv_DEL_count = read_string("stat_DEL.txt")
-    String stat_sv_INS_count = read_string("stat_INS.txt")
-    String stat_sv_INV_count = read_string("stat_INV.txt")
-    String stat_sv_BND_count = read_string("stat_BND.txt")
+    String stat_sv_DUP_count    = read_string("stat_DUP.txt")
+    String stat_sv_DEL_count    = read_string("stat_DEL.txt")
+    String stat_sv_INS_count    = read_string("stat_INS.txt")
+    String stat_sv_INV_count    = read_string("stat_INV.txt")
+    String stat_sv_INVBND_count = read_string("stat_INVBND.txt")
+    String stat_sv_BND_count    = read_string("stat_BND.txt")
   }
 
   runtime {
