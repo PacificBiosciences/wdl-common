@@ -101,7 +101,7 @@ task write_ped_phrank {
   }
 
   runtime {
-    docker: "~{runtime_attributes.container_registry}/wgs_tertiary@sha256:abc0f04b2cf73aaa920f7b5a898972f04cce1b901acb980f7fb6a453e7e8e7c8"
+    docker: "~{runtime_attributes.container_registry}/wgs_tertiary@sha256:410597030e0c85cf16eb27a877d260e7e2824747f5e8b05566a1aaa729d71136"
     cpu: threads
     memory: mem_gb + " GB"
     disk: disk_size + " GB"
