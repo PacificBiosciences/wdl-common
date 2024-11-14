@@ -56,7 +56,7 @@ task write_ped_phrank {
 
     if ~{defined(family)}; then
       echo "Family struct provided. Converting to PED format."
-      json2ped.py ~{write_json(family)} > ~{id}.ped
+      json2ped.py ~{write_json(select_first([family]))} > ~{id}.ped
     else
       echo "Family struct not provided. Creating single sample PED file."
       # shellcheck disable=SC2194
