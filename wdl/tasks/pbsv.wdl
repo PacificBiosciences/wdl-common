@@ -149,7 +149,7 @@ task pbsv_call {
     # This is brittle and likely to break if pbsv discover changes output format.
     # Build a pattern to match; we want headers (e.g., '^#') and signature
     #   records where third column matches the chromosome (e.g., '^.\t.\tchr1\t').
-      pattern=$(echo ~{sep=" " regions} \
+      pattern=$(echo ~{sep=" " select_first([regions, []])} \
         | sed 's/^/^.\\t.\\t/; s/ /\\t\|^.\\t.\\t/g; s/$/\\t/' \
         | echo "^#|""$(</dev/stdin)")
 
