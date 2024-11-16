@@ -127,7 +127,7 @@ task mosdepth {
     cat << EOF > infer_chrY.py
     import pandas as pd
     df = pd.read_csv('~{sample_id}.~{ref_name}.mosdepth.summary.txt', sep='\\t')
-    chrA_depth = df[df['chrom'].str.match(r'^(chr)?\d{1,2}$')]['mean'].mean()
+    chrA_depth = df[df['chrom'].str.match(r'^(chr)?\\d{1,2}$')]['mean'].mean()
     chrY_depth = df[df['chrom'].str.match(r'^(chr)?Y$')]['mean'].mean()
     if chrA_depth == 0:
       print('')
