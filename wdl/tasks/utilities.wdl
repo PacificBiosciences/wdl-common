@@ -34,7 +34,7 @@ task split_string {
   Int disk    = 1
 
   command <<<
-    echo '~{sub(concatenated_string, delimiter, "\n")}'
+    echo '~{sub(concatenated_string, delimiter, "\\n")}'
   >>>
 
   output {
@@ -99,7 +99,7 @@ task consolidate_stats {
     cat << EOF > transpose.py
     import sys
     for outrow in list(zip(*[_.split() for _ in sys.stdin])):
-      print('\t'.join(outrow))
+      print('\\t'.join(outrow))
     EOF
 
     # shellcheck disable=SC2296

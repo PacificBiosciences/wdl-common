@@ -92,7 +92,7 @@ task mosdepth {
     sns.set_theme(style='darkgrid')
     df = pd.read_csv(
       '~{sample_id}.~{ref_name}.regions.bed.gz',
-      sep='\t',
+      sep='\\t',
       names=['chr', 'start', 'end', 'depth'],
       compression='gzip',
     )
@@ -107,7 +107,7 @@ task mosdepth {
     axs[1].set_xlim(0, xmax)
     axs[1].set_yticks(np.arange(0,1.1,0.1))
     axs[1].set_ylabel('Proportion ≥ depth')
-    plt.suptitle('~{sample_id}.~{ref_name}\nAligned depth distribution')
+    plt.suptitle('~{sample_id}.~{ref_name}\\nAligned depth distribution')
     fig.tight_layout()
     plt.savefig('~{sample_id}.~{ref_name}.depth_distribution.png')
     EOF
@@ -117,7 +117,7 @@ task mosdepth {
     # get the mean depth
     cat << EOF > get_mean_depth.py
     import pandas as pd
-    df = pd.read_csv('~{sample_id}.~{ref_name}.mosdepth.summary.txt', sep='\t')
+    df = pd.read_csv('~{sample_id}.~{ref_name}.mosdepth.summary.txt', sep='\\t')
     print(df[df['chrom'] == 'total']['mean'].values[0])
     EOF
 
@@ -126,7 +126,7 @@ task mosdepth {
     # infer the sex from normalized chrY depth
     cat << EOF > infer_chrY.py
     import pandas as pd
-    df = pd.read_csv('~{sample_id}.~{ref_name}.mosdepth.summary.txt', sep='\t')
+    df = pd.read_csv('~{sample_id}.~{ref_name}.mosdepth.summary.txt', sep='\\t')
     chrA_depth = df[df['chrom'].str.match(r'^(chr)?\d{1,2}$')]['mean'].mean()
     chrY_depth = df[df['chrom'].str.match(r'^(chr)?Y$')]['mean'].mean()
     if chrA_depth == 0:

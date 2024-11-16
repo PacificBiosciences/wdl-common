@@ -54,18 +54,18 @@ task merge_bam_stats {
     cat << EOF > plot_length_and_quality.py
     import sys, pandas as pd, seaborn as sns, matplotlib.pyplot as plt
     sns.set_theme(style='darkgrid')
-    df = pd.read_csv(sys.stdin, sep='\t', header=None, names=['movie', 'read_name', 'read_length', 'read_quality'])
+    df = pd.read_csv(sys.stdin, sep='\\t', header=None, names=['movie', 'read_name', 'read_length', 'read_quality'])
     fig, ax = plt.subplots(figsize=(8, 6))
     sns.histplot(data=df, x='read_quality', hue='movie', bins=range(0, 61), multiple="stack", ax=ax)
     ax.set_xlabel('Phred-scaled read quality'); ax.set_xlim(0,60);
     ax.set_ylabel('read count'); ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: f'{int(x/1000)}k' if x >= 1000 else f'{int(x)}'));
-    ax.set_title('~{sample_id}\nRead quality histogram'); fig.tight_layout();
+    ax.set_title('~{sample_id}\\nRead quality histogram'); fig.tight_layout();
     plt.savefig('~{sample_id}.read_quality_histogram.png')
     fig, ax = plt.subplots(figsize=(8, 6))
     sns.histplot(data=df, x='read_length', hue='movie', bins=range(0, 40000, 1000), multiple="stack", ax=ax)
     ax.set_xlim(0,40000); ax.set_xlabel('read length (bp)');
     ax.set_ylabel('read count'); ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: f'{int(x/1000)}k' if x >= 1000 else f'{int(x)}'));
-    ax.set_title('~{sample_id}\nRead length histogram'); fig.tight_layout();
+    ax.set_title('~{sample_id}\\nRead length histogram'); fig.tight_layout();
     plt.savefig('~{sample_id}.read_length_histogram.png')
     EOF
 
@@ -74,8 +74,8 @@ task merge_bam_stats {
 
     cat << EOF > summary_stats.py
     import sys, pandas as pd
-    df = pd.read_csv(sys.stdin, sep='\t', header=None)
-    print(f'{len(df)}\t{df[2].mean().round(2)}\t{df[2].median().round(2)}\t{df[3].mean().round(2)}\t{df[3].median().round(2)}')
+    df = pd.read_csv(sys.stdin, sep='\\t', header=None)
+    print(f'{len(df)}\\t{df[2].mean().round(2)}\\t{df[2].median().round(2)}\\t{df[3].mean().round(2)}\\t{df[3].median().round(2)}')
     EOF
 
     python3 ./summary_stats.py < ~{sample_id}.read_length_and_quality.tsv > stats.txt

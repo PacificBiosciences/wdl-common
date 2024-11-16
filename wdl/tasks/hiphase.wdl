@@ -129,7 +129,7 @@ task hiphase {
     # pull the phased basepairs and phase block N50
     cat << EOF > get_tsv_stats.py
     import sys, pandas as pd
-    df = pd.read_csv('~{sample_id}.~{ref_name}.hiphase.stats.tsv', sep='\t')
+    df = pd.read_csv('~{sample_id}.~{ref_name}.hiphase.stats.tsv', sep='\\t')
     print(df[df['chromosome'] == 'all'][sys.argv[1]].values[0])
     EOF
 
@@ -143,13 +143,13 @@ task hiphase {
       pysam.set_verbosity(save)  # restore warnings
       for s in infile:
         if not s.is_unmapped:
-          print(f"{s.query_name}\t{'supp' if s.is_supplementary else 'prim'}\t{s.mapping_quality}\t{s.get_tag('mg'):.4f}")
+          print(f"{s.query_name}\\t{'supp' if s.is_supplementary else 'prim'}\\t{s.mapping_quality}\\t{s.get_tag('mg'):.4f}")
     EOF
 
     cat << EOF > plot_mapq.py
     import sys, pandas as pd, matplotlib.pyplot as plt, seaborn as sns
     sns.set_style('darkgrid')
-    df = pd.read_csv(sys.argv[1], header=1, names=['query_name', 'alignment_type', 'mapq', 'mg'], sep='\t', compression='gzip')
+    df = pd.read_csv(sys.argv[1], header=1, names=['query_name', 'alignment_type', 'mapq', 'mg'], sep='\\t', compression='gzip')
     fig, axs = plt.subplots(2, 1, figsize=(8, 6))
     sns.histplot(df, x='mapq', hue='alignment_type', element="step", kde=False, bins=60, ax=axs[0])
     sns.histplot(df, x='mapq', hue='alignment_type', element="step", kde=False, bins=60, ax=axs[1], legend=False)
@@ -160,7 +160,7 @@ task hiphase {
     axs[1].axes.set_xlim(0, 60)
     axs[1].axes.set_yscale('log')
     axs[1].axes.set_ylabel('log10(Count)')
-    fig.suptitle('~{sample_id}.~{ref_name}\nMAPQ distribution')
+    fig.suptitle('~{sample_id}.~{ref_name}\\nMAPQ distribution')
     plt.tight_layout()
     plt.savefig('~{sample_id}.~{ref_name}.mapq_distribution.png')
     fig, axs = plt.subplots(2, 1, figsize=(8, 6))
@@ -173,7 +173,7 @@ task hiphase {
     axs[1].set_xlim(70, 100)
     axs[1].axes.set_yscale('log')
     axs[1].axes.set_ylabel('log10(Count)')
-    plt.suptitle('~{sample_id}.~{ref_name}\nGap-compressed sequence identity distribution')
+    plt.suptitle('~{sample_id}.~{ref_name}\\nGap-compressed sequence identity distribution')
     fig.tight_layout()
     plt.savefig('~{sample_id}.~{ref_name}.mg_distribution.png')
     EOF
