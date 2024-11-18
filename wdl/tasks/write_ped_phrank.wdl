@@ -43,7 +43,7 @@ task write_ped_phrank {
 
     String phenotypes
 
-    Float disk_size = 1
+    Int disk_size = 1
 
     RuntimeAttributes runtime_attributes
   }
