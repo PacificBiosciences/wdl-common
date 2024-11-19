@@ -71,7 +71,7 @@ task write_ped_phrank {
           SEX="."
           ;;
       esac
-      echo -e "~{id}\\t~{id}\\t.\\t.\\t$SEX\\t2" > ~{id}.ped
+      echo -e "~{id}\t~{id}\t.\t.\t$SEX\t2" > ~{id}.ped
     fi
 
     cat ~{id}.ped

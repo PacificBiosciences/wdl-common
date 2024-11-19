@@ -98,7 +98,7 @@ task bcftools_stats_roh_small_variants {
     BASES = ['A', 'C', 'G', 'T']
     df = pd.concat(
       [
-        pd.read_csv(sys.stdin, sep='\\t'),
+        pd.read_csv(sys.stdin, sep='\t'),
         pd.DataFrame.from_dict({'REF': BASES, 'ALT': BASES, 'count': [0] * len(BASES)})
       ],
       ignore_index=True
@@ -112,7 +112,7 @@ task bcftools_stats_roh_small_variants {
     plt.ylabel('ALT base', fontsize='large')
     plt.xticks(fontsize='large', rotation=0)
     plt.yticks(fontsize='large', rotation=0)
-    plt.title('~{sample_id}.~{ref_name}\\nDeepVariant SNV distribution', fontsize='large')
+    plt.title('~{sample_id}.~{ref_name}\nDeepVariant SNV distribution', fontsize='large')
     fig.tight_layout()
     plt.savefig('~{sample_id}.~{ref_name}.small_variants.snv_distribution.png')
     EOF
@@ -128,17 +128,17 @@ task bcftools_stats_roh_small_variants {
       --trim-alt-alleles \
       - \
     | bcftools query \
-      --format '%REF\\t%ALT\\n' \
+      --format '%REF\t%ALT\n' \
       - \
-    | sort | uniq -c | sed 's/^\s*//;s/\s/\\t/' \
-    | awk -v OFS=$'\\t' 'BEGIN {print "REF", "ALT", "count"} {print $2, $3, $1}' \
+    | sort | uniq -c | sed 's/^\s*//;s/\s/\t/' \
+    | awk -v OFS=$'\t' 'BEGIN {print "REF", "ALT", "count"} {print $2, $3, $1}' \
     | python3 ./plot_snvs.py -
 
     # plot indels by size
     cat << EOF > plot_indels.py
     import sys, pandas as pd, seaborn as sns, matplotlib.pyplot as plt
     from numpy import abs
-    df = pd.read_csv(sys.stdin, sep='\\t')
+    df = pd.read_csv(sys.stdin, sep='\t')
     def size_filter(df, col, min, max):
       return df[(abs(df[col]) >= min) & (abs(df[col]) < max)]
     def plot_hist(ax, df, min, max, bins=100, logy=False, xlabel=True):
@@ -156,7 +156,7 @@ task bcftools_stats_roh_small_variants {
     fig, axs = plt.subplots(2, 1, figsize=(8,6))
     plot_hist(axs[0], df, 1, 50, xlabel=False)
     plot_hist(axs[1], df, 1, 50, logy=True)
-    plt.suptitle('~{sample_id}.~{ref_name}\\nDeepVariant indel distribution, ±[1,50) bp')
+    plt.suptitle('~{sample_id}.~{ref_name}\nDeepVariant indel distribution, ±[1,50) bp')
     fig.tight_layout()
     plt.savefig('~{sample_id}.~{ref_name}.small_variants.indel_distribution.png')
     EOF
@@ -172,11 +172,11 @@ task bcftools_stats_roh_small_variants {
       --trim-alt-alleles \
       - \
     | bcftools query \
-      --format '%REF\\t%ALT\\n' \
+      --format '%REF\t%ALT\n' \
       - \
-    | awk -v OFS=$'\\t' '{print length($2) - length($1)}' \
+    | awk -v OFS=$'\t' '{print length($2) - length($1)}' \
     | sort -n | uniq -c | sed 's/^\s*//' \
-    | awk -v OFS=$'\\t' 'BEGIN {print "length", "count"} {print $2, $1}' \
+    | awk -v OFS=$'\t' 'BEGIN {print "length", "count"} {print $2, $1}' \
     | python3 ./plot_indels.py -
 
     # find runs of homozygosity
@@ -190,13 +190,13 @@ task bcftools_stats_roh_small_variants {
     cat << EOF > roh_bed.py
     with open('~{sample_id}.~{ref_name}.bcftools_roh.out', 'r') as f:
       lines = f.readlines()
-      print("#chr\\tstart\\tend\\tqual")
+      print("#chr\tstart\tend\tqual")
       for line in lines:
         if line.startswith("RG"):
           # RG [2]Sample [3]Chromosome [4]Start [5]End [6]Length (bp) [7]Number of markers [8]Quality (average fwd-bwd phred score)
-          _, _, chr, start, end, length, _, score = line.strip().split('\\t')
+          _, _, chr, start, end, length, _, score = line.strip().split('\t')
           if int(length) >= ~{min_length} and float(score) >= ~{min_qual}:
-            print('\\t'.join([chr, start, end, score]))
+            print('\t'.join([chr, start, end, score]))
     EOF
 
     python3 ./roh_bed.py > ~{sample_id}.~{ref_name}.bcftools_roh.bed

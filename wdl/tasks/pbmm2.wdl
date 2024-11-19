@@ -74,7 +74,7 @@ task pbmm2_align_wgs {
         print(f'Warning: read {b.query_name} has tag rq:f:nan.', file=sys.stderr)
         continue
       readqv = MAX_QV if errorrate == 0 else math.floor(-10 * math.log10(errorrate))
-      print(f"{b.query_name.split('/')[0]}\\t{b.query_name}\\t{len(b.query_sequence)}\\t{readqv}")
+      print(f"{b.query_name.split('/')[0]}\t{b.query_name}\t{len(b.query_sequence)}\t{readqv}")
     bamin.close()
     EOF
 

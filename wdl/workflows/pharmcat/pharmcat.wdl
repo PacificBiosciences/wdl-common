@@ -278,7 +278,7 @@ task filter_preprocessed_vcf {
 
     # get a list of the regions overlapping variants
     bcftools query \
-      --format '%CHROM\\t%POS0\\t%END\\n' \
+      --format '%CHROM\t%POS0\t%END\n' \
       ~{preprocessed_vcf} \
     > targeted.bed
 
@@ -297,7 +297,7 @@ task filter_preprocessed_vcf {
     import gzip
     with gzip.open('targeted.regions.bed.gz', 'rt') as f:
       for line in f.readlines():
-        if float(line.split('\\t')[3]) >= ~{min_coverage}:
+        if float(line.split('\t')[3]) >= ~{min_coverage}:
           print(line.strip())
     EOF
 

@@ -136,12 +136,12 @@ task hificnv {
     cat << EOF > cnv_stats.py
     import sys, pandas as pd
     df = pd.read_csv(sys.stdin, header=None)
-    print(f'{df[0].count()}\\t{df[0].sum()}')
+    print(f'{df[0].count()}\t{df[0].sum()}')
     EOF
 
     bcftools query \
       --include 'FILTER="PASS" & SVTYPE="DUP"' \
-      --format '%INFO/SVLEN\\n' \
+      --format '%INFO/SVLEN\n' \
       ~{sample_id}.~{ref_name}.hificnv.vcf.gz \
       > DUP_lengths.txt
     if [ -s DUP_lengths.txt ]; then
@@ -155,7 +155,7 @@ task hificnv {
 
     bcftools query \
       --include 'FILTER="PASS" & SVTYPE="DEL"' \
-      --format '%INFO/SVLEN\\n' \
+      --format '%INFO/SVLEN\n' \
       ~{sample_id}.~{ref_name}.hificnv.vcf.gz \
       > DEL_lengths.txt
     if [ -s DEL_lengths.txt ]; then
