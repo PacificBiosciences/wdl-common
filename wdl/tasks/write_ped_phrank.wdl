@@ -48,15 +48,15 @@ task write_ped_phrank {
     RuntimeAttributes runtime_attributes
   }
 
-  Int threads   = 1
-  Int mem_gb    = 2
+  Int threads = 1
+  Int mem_gb  = 2
 
   command <<<
     set -euo pipefail
 
     if ~{defined(family)}; then
       echo "Family struct provided. Converting to PED format."
-      json2ped.py ~{write_json(select_first([family]))} > ~{id}.ped
+    json2ped.py <(jq '.[0]' ~{write_json(select_all([family]))}) > ~{id}.ped
     else
       echo "Family struct not provided. Creating single sample PED file."
       # shellcheck disable=SC2194
