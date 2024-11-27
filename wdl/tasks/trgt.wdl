@@ -287,7 +287,7 @@ task coverage_dropouts {
   }
 
   runtime {
-    docker: "~{runtime_attributes.container_registry}/pb_wdl_base@sha256:4b889a1f21a6a7fecf18820613cf610103966a93218de772caba126ab70a8e87"
+    docker: "~{runtime_attributes.container_registry}/trgt@sha256:0284ff5756f8d47d9d81b515b8b1a6c81fac862ae5a7b4fe89f65235c3e5e0c9"
     cpu: threads
     memory: mem_gb + " GB"
     disk: disk_size + " GB"
