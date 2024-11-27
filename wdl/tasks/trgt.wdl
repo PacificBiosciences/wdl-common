@@ -71,6 +71,8 @@ task trgt {
   Int mem_gb    = 16
   Int disk_size = ceil((size(aligned_bam, "GB") + size(ref_fasta, "GB")) * 2 + 20)
 
+  Int samtools_sort_threads = 8
+
   String karyotype = if select_first([sex, "FEMALE"]) == "MALE" then "XY" else "XX"
 
   command <<<
@@ -105,7 +107,7 @@ task trgt {
     # default memory is 768 MB/thread, but we typically resource
     # this task with 0.5 GB/thread, so we need to set memory option
     samtools sort \
-      ~{if threads > 1 then "--threads " + (threads - 1) else ""} \
+      --threads ~{samtools_sort_threads} \
       -m 400M \
       -o ~{out_prefix}.trgt.spanning.sorted.bam \
       ~{out_prefix}.trgt.spanning.bam
@@ -135,7 +137,7 @@ task trgt {
   }
 
   runtime {
-    docker: "~{runtime_attributes.container_registry}/trgt@sha256:0284ff5756f8d47d9d81b515b8b1a6c81fac862ae5a7b4fe89f65235c3e5e0c9"
+    docker: "~{runtime_attributes.container_registry}/trgt@sha256:109134f94756b190f2ba8dad3ed9f1ce4b9048247f6fafc7a7c35daab07a91be"
     cpu: threads
     memory: mem_gb + " GB"
     disk: disk_size + " GB"
@@ -217,7 +219,7 @@ task trgt_merge {
   }
 
   runtime {
-    docker: "~{runtime_attributes.container_registry}/trgt@sha256:0284ff5756f8d47d9d81b515b8b1a6c81fac862ae5a7b4fe89f65235c3e5e0c9"
+    docker: "~{runtime_attributes.container_registry}/trgt@sha256:109134f94756b190f2ba8dad3ed9f1ce4b9048247f6fafc7a7c35daab07a91be"
     cpu: threads
     memory: mem_gb + " GB"
     disk: disk_size + " GB"
