@@ -34,7 +34,7 @@ task samtools_merge {
   }
 
   Int threads   = 8
-  Int mem_gb    = 4
+  Int mem_gb    = 8
   Int disk_size = ceil(size(bams, "GB") * 2 + 20)
 
   command <<<
