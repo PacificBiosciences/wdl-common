@@ -94,38 +94,31 @@ task cpg_pileup {
       --min-coverage ~{min_coverage} \
       --model "$PILEUP_MODEL_DIR"/pileup_calling_model.v1.tflite
 
-    # count the number of CpG sites in each bed file
-    wc --lines < ~{out_prefix}.hap1.bed > ~{out_prefix}.hap1.bed.count || echo "0" > ~{out_prefix}.hap1.bed.count
-    wc --lines < ~{out_prefix}.hap2.bed > ~{out_prefix}.hap2.bed.count || echo "0" > ~{out_prefix}.hap2.bed.count
-    wc --lines < ~{out_prefix}.combined.bed > ~{out_prefix}.combined.bed.count || echo "0" > ~{out_prefix}.combined.bed.count
-
-    # rename for clarity
-    mv ~{out_prefix}.combined.bw ~{out_prefix}.cpg_pileup.combined.bw
-    mv ~{out_prefix}.hap1.bw ~{out_prefix}.cpg_pileup.hap1.bw
-    mv ~{out_prefix}.hap2.bw ~{out_prefix}.cpg_pileup.hap2.bw
-    mv ~{out_prefix}.combined.bed ~{out_prefix}.cpg_pileup.combined.bed
-    mv ~{out_prefix}.hap1.bed ~{out_prefix}.cpg_pileup.hap1.bed
-    mv ~{out_prefix}.hap2.bed ~{out_prefix}.cpg_pileup.hap2.bed
-
-    # compress and index the bed files to save space
-    bgzip ~{out_prefix}.cpg_pileup.combined.bed
-    tabix --preset bed ~{out_prefix}.cpg_pileup.combined.bed.gz
-    bgzip ~{out_prefix}.cpg_pileup.hap1.bed
-    tabix --preset bed ~{out_prefix}.cpg_pileup.hap1.bed.gz
-    bgzip ~{out_prefix}.cpg_pileup.hap2.bed
-    tabix --preset bed ~{out_prefix}.cpg_pileup.hap2.bed.gz
+    # rename for clarity; compress and index bed files
+    for infix in combined hap1 hap2; do
+      echo "0" > "~{out_prefix}.${infix}.bed.count"
+      if [ -f "~{out_prefix}.${infix}.bw" ]; then
+        mv --verbose "~{out_prefix}.${infix}.bw" "~{out_prefix}.cpg_pileup.${infix}.bw"
+      fi
+      if [ -f "~{out_prefix}.${infix}.bed" ]; then
+        wc --lines < "~{out_prefix}.${infix}.bed" > "~{out_prefix}.${infix}.bed.count"
+        mv --verbose "~{out_prefix}.${infix}.bed" "~{out_prefix}.cpg_pileup.${infix}.bed"
+        bgzip "~{out_prefix}.cpg_pileup.${infix}.bed"
+        tabix --preset bed "~{out_prefix}.cpg_pileup.${infix}.bed.gz"
+      fi
+    done
   >>>
 
   output {
-    File   combined_bed            = "~{out_prefix}.cpg_pileup.combined.bed.gz"
-    File   combined_bed_index      = "~{out_prefix}.cpg_pileup.combined.bed.gz.tbi"
-    File   hap1_bed                = "~{out_prefix}.cpg_pileup.hap1.bed.gz"
-    File   hap1_bed_index          = "~{out_prefix}.cpg_pileup.hap1.bed.gz.tbi"
-    File   hap2_bed                = "~{out_prefix}.cpg_pileup.hap2.bed.gz"
-    File   hap2_bed_index          = "~{out_prefix}.cpg_pileup.hap2.bed.gz.tbi"
-    File   combined_bw             = "~{out_prefix}.cpg_pileup.combined.bw"
-    File   hap1_bw                 = "~{out_prefix}.cpg_pileup.hap1.bw"
-    File   hap2_bw                 = "~{out_prefix}.cpg_pileup.hap2.bw"
+    File?  combined_bed            = "~{out_prefix}.cpg_pileup.combined.bed.gz"
+    File?  combined_bed_index      = "~{out_prefix}.cpg_pileup.combined.bed.gz.tbi"
+    File?  hap1_bed                = "~{out_prefix}.cpg_pileup.hap1.bed.gz"
+    File?  hap1_bed_index          = "~{out_prefix}.cpg_pileup.hap1.bed.gz.tbi"
+    File?  hap2_bed                = "~{out_prefix}.cpg_pileup.hap2.bed.gz"
+    File?  hap2_bed_index          = "~{out_prefix}.cpg_pileup.hap2.bed.gz.tbi"
+    File?  combined_bw             = "~{out_prefix}.cpg_pileup.combined.bw"
+    File?  hap1_bw                 = "~{out_prefix}.cpg_pileup.hap1.bw"
+    File?  hap2_bw                 = "~{out_prefix}.cpg_pileup.hap2.bw"
     String stat_hap1_cpg_count     = read_string("~{out_prefix}.hap1.bed.count")
     String stat_hap2_cpg_count     = read_string("~{out_prefix}.hap2.bed.count")
     String stat_combined_cpg_count = read_string("~{out_prefix}.combined.bed.count")
