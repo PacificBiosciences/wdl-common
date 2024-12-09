@@ -65,15 +65,23 @@ task pbmm2_align_wgs {
     cat << EOF > extract_read_length_and_qual.py
     import math, pysam
     MAX_QV = 60
+    def readQualityFromBaseQuality(baseQuals, maxQV):
+      """Compute read quality from an array of base qualities; cap at maxQV."""
+      readLen = len(baseQuals)
+      expectedErrors = sum([math.pow(10, -0.1 * x) for x in baseQuals])
+      return min(maxQV, math.floor(-10 * math.log10(expectedErrors / readLen)))
     save = pysam.set_verbosity(0)  # suppress [E::idx_find_and_load]
     bamin = pysam.AlignmentFile('~{bam}', check_sq=False)
     pysam.set_verbosity(save)  # restore warnings
     for b in bamin:
-      errorrate = 1.0 - b.get_tag('rq')
-      if math.isnan(b.get_tag('rq')):
-        print(f'Warning: read {b.query_name} has tag rq:f:nan.', file=sys.stderr)
-        continue
-      readqv = MAX_QV if errorrate == 0 else math.floor(-10 * math.log10(errorrate))
+      if b.has_tag('rq'):  # get read quality from "rq" BAM tag if available
+        errorrate = 1.0 - b.get_tag('rq')
+        if math.isnan(b.get_tag('rq')):
+          print(f'Warning: read {b.query_name} has tag rq:f:nan.', file=sys.stderr)
+          continue
+        readqv = MAX_QV if errorrate == 0 else math.floor(-10 * math.log10(errorrate))
+      else:
+        readqv = readQualityFromBaseQuality(b.query_qualities, MAX_QV)
       print(f"{b.query_name.split('/')[0]}\t{b.query_name}\t{len(b.query_sequence)}\t{readqv}")
     bamin.close()
     EOF
