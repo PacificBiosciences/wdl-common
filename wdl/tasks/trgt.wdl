@@ -33,6 +33,9 @@ task trgt {
     out_prefix: {
       name: "Output prefix"
     }
+    max_depth: {
+      name: "Maximum locus depth"
+    }
     runtime_attributes: {
       name: "Runtime attribute structure"
     }
@@ -64,11 +67,13 @@ task trgt {
 
     String out_prefix
 
+    Int max_depth = 50
+
     RuntimeAttributes runtime_attributes
   }
 
   Int threads   = 32
-  Int mem_gb    = 16
+  Int mem_gb    = 32
   Int disk_size = ceil((size(aligned_bam, "GB") + size(ref_fasta, "GB")) * 2 + 20)
 
   Int samtools_sort_threads = 8
@@ -88,6 +93,7 @@ task trgt {
       --genome ~{ref_fasta} \
       --repeats ~{trgt_bed} \
       --reads ~{aligned_bam} \
+      --max-depth ~{max_depth} \
       --output-prefix ~{out_prefix}.trgt
 
     bcftools --version
@@ -104,8 +110,6 @@ task trgt {
 
     samtools --version
 
-    # default memory is 768 MB/thread, but we typically resource
-    # this task with 0.5 GB/thread, so we need to set memory option
     samtools sort \
       --threads ~{samtools_sort_threads} \
       -m 400M \
