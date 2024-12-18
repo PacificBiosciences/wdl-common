@@ -110,23 +110,22 @@ workflow pharmcat {
       runtime_attributes    = default_runtime_attributes
   }
 
-  call run_pharmcat {
-    input:
-      preprocessed_filtered_vcf = filter_preprocessed_vcf.filtered_vcf,
-      input_tsvs                = input_tsvs,
-      pharmcat_docker           = pharmcat_docker,
-      out_prefix                = "~{sample_id}.pharmcat",
-      runtime_attributes        = default_runtime_attributes
+  if (defined(filter_preprocessed_vcf.filtered_vcf)) {
+    call run_pharmcat {
+      input:
+        preprocessed_filtered_vcf = select_first([filter_preprocessed_vcf.filtered_vcf]),
+        input_tsvs                = input_tsvs,
+        pharmcat_docker           = pharmcat_docker,
+        out_prefix                = "~{sample_id}.pharmcat",
+        runtime_attributes        = default_runtime_attributes
+    }
   }
 
   output {
-    File? pharmcat_missing_pgx_vcf           = pharmcat_preprocess.missing_pgx_vcf
-    File  pharmcat_preprocessed_filtered_vcf = filter_preprocessed_vcf.filtered_vcf
-
-    File pharmcat_match_json     = run_pharmcat.pharmcat_match_json
-    File pharmcat_phenotype_json = run_pharmcat.pharmcat_phenotype_json
-    File pharmcat_report_html    = run_pharmcat.pharmcat_report_html
-    File pharmcat_report_json    = run_pharmcat.pharmcat_report_json
+    File? pharmcat_match_json     = run_pharmcat.pharmcat_match_json
+    File? pharmcat_phenotype_json = run_pharmcat.pharmcat_phenotype_json
+    File? pharmcat_report_html    = run_pharmcat.pharmcat_report_html
+    File? pharmcat_report_json    = run_pharmcat.pharmcat_report_json
   }
 }
 
@@ -304,15 +303,17 @@ task filter_preprocessed_vcf {
     python3 ./filter.py > targeted_regions.sufficient_depth.bed
 
     # filter the vcf for regions >= min_coverage
-    bcftools view \
-      --regions-file targeted_regions.sufficient_depth.bed \
-      --output-type v \
-      --output ~{out_prefix}.filtered.vcf \
-      ~{preprocessed_vcf_basename}
+    if [ -s targeted_regions.sufficient_depth.bed ]; then
+      bcftools view \
+        --regions-file targeted_regions.sufficient_depth.bed \
+        --output-type v \
+        --output ~{out_prefix}.filtered.vcf \
+        ~{preprocessed_vcf_basename}
+    fi
   >>>
 
   output {
-    File filtered_vcf = "~{out_prefix}.filtered.vcf"
+    File? filtered_vcf = "~{out_prefix}.filtered.vcf"
   }
 
   runtime {
