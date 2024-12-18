@@ -385,7 +385,7 @@ task run_pharmcat {
     set -eu
 
     sort -k1,1 < ~{sep=" " input_tsvs} \
-    | grep -v NO_READS \
+    | grep -Ev 'NO_READS|NO_MATCH' \
     > merged.tsv \
     || touch merged.tsv
 
