@@ -381,9 +381,12 @@ task run_pharmcat {
   String pharmcat_basename = basename(preprocessed_filtered_vcf, ".vcf")
 
   command <<<
-    set -euo pipefail
+    set -eu
 
-    sort -k1,1 < ~{sep=" " input_tsvs} > merged.tsv || touch merged.tsv
+    sort -k1,1 < ~{sep=" " input_tsvs} \
+    | grep -v NO_READS \
+    > merged.tsv \
+    || touch merged.tsv
 
     # Run pharmcat
     /pharmcat/pharmcat \
