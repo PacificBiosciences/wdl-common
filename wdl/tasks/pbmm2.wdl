@@ -164,7 +164,7 @@ task pbmm2_align_wgs {
   }
 
   runtime {
-    docker: "~{runtime_attributes.container_registry}/pbmm2@sha256:b58eef0645dd9adca850c9b4811f289ddcd57f630596d9f524701bc787467f30"
+    docker: "~{runtime_attributes.container_registry}/pbmm2@sha256:5f3f4d1f5dbea5cd4c388ee26b2fecbbb7dbcef449343633e039dca3d3725859"
     cpu: threads
     memory: mem_gb + " GB"
     disk: disk_size + " GB"
