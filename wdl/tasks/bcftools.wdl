@@ -509,31 +509,31 @@ task sv_stats {
     # Count the number of variants of each type
     bcftools view \
       --no-header \
-      --include 'FILTER="PASS" & ABS(SVLEN)>49 & SVTYPE="DUP"' \
+      --include 'GT="alt" & FILTER="PASS" & ABS(SVLEN)>49 & SVTYPE="DUP"' \
       "~{vcf}" \
     | wc --lines \
     > stat_DUP.txt || echo "0" > stat_DUP.txt
     bcftools view \
       --no-header \
-      --include 'FILTER="PASS" & ABS(SVLEN)>49 & SVTYPE="DEL"' \
+      --include 'GT="alt" & FILTER="PASS" & ABS(SVLEN)>49 & SVTYPE="DEL"' \
       "~{vcf}" \
     | wc --lines \
     > stat_DEL.txt || echo "0" > stat_DEL.txt
     bcftools view \
       --no-header \
-      --include 'FILTER="PASS" & ABS(SVLEN)>49 & SVTYPE="INS"' \
+      --include 'GT="alt" & FILTER="PASS" & ABS(SVLEN)>49 & SVTYPE="INS"' \
       "~{vcf}" \
     | wc --lines \
     > stat_INS.txt || echo "0" > stat_INS.txt
     bcftools view \
       --no-header \
-      --include 'FILTER="PASS" & ABS(SVLEN)>49 & SVTYPE="INV"' \
+      --include 'GT="alt" & FILTER="PASS" & ABS(SVLEN)>49 & SVTYPE="INV"' \
       "~{vcf}" \
     | wc --lines \
     > stat_INV.txt || echo "0" > stat_INV.txt
     bcftools view \
       --no-header \
-      --include 'FILTER="PASS" & SVTYPE="BND"' \
+      --include 'GT="alt" & FILTER="PASS" & SVTYPE="BND"' \
       "~{vcf}" \
     | wc --lines \
     > stat_BND.txt || echo "0" > stat_BND.txt
