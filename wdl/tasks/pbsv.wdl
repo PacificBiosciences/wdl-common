@@ -35,7 +35,7 @@ task pbsv_discover {
   }
 
   Int threads   = 2
-  Int mem_gb    = 10
+  Int mem_gb    = 16
   Int disk_size = ceil((size(aligned_bam, "GB") + size(trf_bed, "GB")) * 2 + 20)
 
   String out_prefix = basename(aligned_bam, ".bam")
