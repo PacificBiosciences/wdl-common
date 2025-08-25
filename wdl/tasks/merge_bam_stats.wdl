@@ -45,10 +45,11 @@ task merge_bam_stats {
   }
 
   Int threads   = 2
-  Int mem_gb    = 4
+  Int mem_gb    = 10
   Int disk_size = 10
 
   command <<<
+    set -euo pipefail
     zcat ~{sep=" " bam_stats} > ~{sample_id}.read_length_and_quality.tsv
 
     cat << EOF > plot_length_and_quality.py
