@@ -95,7 +95,7 @@ task hiphase {
   }
 
   Int threads   = 16
-  Int mem_gb    = threads * 5
+  Int mem_gb    = threads * 6
   Int disk_size = ceil(size(vcfs, "GB") + size(ref_fasta, "GB") + size(aligned_bam, "GB") * 2 + 20)
 
   command <<<
