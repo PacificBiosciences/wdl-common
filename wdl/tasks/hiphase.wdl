@@ -95,10 +95,7 @@ task hiphase {
   }
 
   Int threads   = 16
-  Int mem_gb = threads * 5
-  if (runtime_attributes.mem_gb) {
-    mem_gb = runtime_attributes.mem_gb
-  }
+  Int mem_gb = select_first([runtime_attributes.mem_gb, threads * 5])
   Int disk_size = ceil(size(vcfs, "GB") + size(ref_fasta, "GB") + size(aligned_bam, "GB") * 2 + 20)
 
   command <<<
