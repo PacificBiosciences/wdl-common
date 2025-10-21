@@ -17,4 +17,7 @@ struct RuntimeAttributes {
   # AWS ECR registries have the format REGISTRY/NAMESPACE/CONTAINER
   # and if the namespace is not specified, HealthOmics will have permissions issues
   String? container_namespace  # Namespace within AWS ECR for HealthOmics
+
+  # Memory override parameter
+  Int? mem_gb
 }
