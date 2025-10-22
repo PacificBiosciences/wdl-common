@@ -529,7 +529,7 @@ task sv_stats {
     # Count the number of variants of each type
     bcftools view \
       --no-header \
-      --include 'GT="alt" & FILTER="PASS" & ABS(SVLEN)>=~{min_length} & SVTYPE="DUP"' \
+      --include '(GT!="ref" & GT!="./." & GT!=".") & FILTER="PASS" & ABS(SVLEN)>=~{min_length} & SVTYPE="DUP"' \
       "~{vcf}" \
     | wc --lines \
     > stat_DUP.txt || echo "0" > stat_DUP.txt
