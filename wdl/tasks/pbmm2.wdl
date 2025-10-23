@@ -54,7 +54,7 @@ task pbmm2_align_wgs {
   }
 
   Int threads   = 24
-  Int mem_gb    = ceil(threads * 4)
+  Int mem_gb    = select_first([runtime_attributes.pbmm2_align_wgs_override_mem_gb, ceil(threads * 4)])
   Int disk_size = ceil(size(bam, "GB") * 3 + size(ref_fasta, "GB") + 70)
 
   String movie = basename(bam, ".bam")

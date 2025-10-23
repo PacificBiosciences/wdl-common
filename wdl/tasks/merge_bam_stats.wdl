@@ -45,7 +45,7 @@ task merge_bam_stats {
   }
 
   Int threads   = 2
-  Int mem_gb    = 10
+  Int mem_gb    = select_first([runtime_attributes.merge_bam_stats_override_mem_gb, 4])
   Int disk_size = 10
 
   command <<<

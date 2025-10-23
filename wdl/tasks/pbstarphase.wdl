@@ -56,7 +56,7 @@ task pbstarphase_diplotype {
   }
 
   Int threads   = 2
-  Int mem_gb    = 24
+  Int mem_gb    = select_first([runtime_attributes.pbstarphase_diplotype_override_mem_gb, 16])
   Int disk_size = ceil(size(phased_vcf, "GB") * 2 + size(aligned_bam, "GB") + size(ref_fasta, "GB") + 50)
 
   command <<<
