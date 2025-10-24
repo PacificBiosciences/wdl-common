@@ -26,6 +26,9 @@ task pbmm2_align_wgs {
     strip_kinetics: {
       name: "Strip kinetics tags"
     }
+    pbmm2_align_wgs_override_mem_gb: {
+      name: "Memory Allocation Override GB"
+    }
     runtime_attributes: {
       name: "Runtime attribute structure"
     }
@@ -50,11 +53,13 @@ task pbmm2_align_wgs {
 
     Boolean strip_kinetics = true
 
+    Int? pbmm2_align_wgs_override_mem_gb
+
     RuntimeAttributes runtime_attributes
   }
 
   Int threads   = 24
-  Int mem_gb    = select_first([runtime_attributes.pbmm2_align_wgs_override_mem_gb, ceil(threads * 4)])
+  Int mem_gb    = select_first([pbmm2_align_wgs_override_mem_gb, ceil(threads * 4)])
   Int disk_size = ceil(size(bam, "GB") * 3 + size(ref_fasta, "GB") + 70)
 
   String movie = basename(bam, ".bam")

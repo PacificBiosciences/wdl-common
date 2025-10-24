@@ -30,10 +30,6 @@ workflow backend_configuration {
     String? zones
     String? gpuType
     String? container_registry
-    Int? hiphase_override_mem_gb
-    Int? merge_bam_stats_override_mem_gb
-    Int? pbmm2_align_wgs_override_mem_gb
-    Int? pbstarphase_diplotype_override_mem_gb
   }
 
   String default_container_registry = "quay.io/pacbio"
@@ -53,11 +49,7 @@ workflow backend_configuration {
       "max_retries": 3,
       "zones": select_first([zones]),
       "gpuType": select_first([gpuType, ""]),
-      "container_registry": select_first([container_registry, default_container_registry]),
-      "hiphase_override_mem_gb": hiphase_override_mem_gb,
-      "merge_bam_stats_override_mem_gb": merge_bam_stats_override_mem_gb,
-      "pbmm2_align_wgs_override_mem_gb": pbmm2_align_wgs_override_mem_gb,
-      "pbstarphase_diplotype_override_mem_gb": pbstarphase_diplotype_override_mem_gb
+      "container_registry": select_first([container_registry, default_container_registry])
     }
 
     RuntimeAttributes gcp_on_demand_runtime_attributes = {
@@ -66,11 +58,7 @@ workflow backend_configuration {
       "max_retries": 0,
       "zones": select_first([zones]),
       "gpuType": select_first([gpuType, ""]),
-      "container_registry": select_first([container_registry, default_container_registry]),
-      "hiphase_override_mem_gb": hiphase_override_mem_gb,
-      "merge_bam_stats_override_mem_gb": merge_bam_stats_override_mem_gb,
-      "pbmm2_align_wgs_override_mem_gb": pbmm2_align_wgs_override_mem_gb,
-      "pbstarphase_diplotype_override_mem_gb": pbstarphase_diplotype_override_mem_gb
+      "container_registry": select_first([container_registry, default_container_registry])
     }
   }
 
@@ -85,11 +73,7 @@ workflow backend_configuration {
       "max_retries": 3,
       "zones": "",
       "gpuType": "",
-      "container_registry": select_first([container_registry, default_container_registry]),
-      "hiphase_override_mem_gb": hiphase_override_mem_gb,
-      "merge_bam_stats_override_mem_gb": merge_bam_stats_override_mem_gb,
-      "pbmm2_align_wgs_override_mem_gb": pbmm2_align_wgs_override_mem_gb,
-      "pbstarphase_diplotype_override_mem_gb": pbstarphase_diplotype_override_mem_gb
+      "container_registry": select_first([container_registry, default_container_registry])
     }
 
     RuntimeAttributes azure_on_demand_runtime_attributes = {
@@ -98,11 +82,7 @@ workflow backend_configuration {
       "max_retries": 0,
       "zones": "",
       "gpuType": "",
-      "container_registry": select_first([container_registry, default_container_registry]),
-      "hiphase_override_mem_gb": hiphase_override_mem_gb,
-      "merge_bam_stats_override_mem_gb": merge_bam_stats_override_mem_gb,
-      "pbmm2_align_wgs_override_mem_gb": pbmm2_align_wgs_override_mem_gb,
-      "pbstarphase_diplotype_override_mem_gb": pbstarphase_diplotype_override_mem_gb
+      "container_registry": select_first([container_registry, default_container_registry])
     }
   }
 
@@ -122,11 +102,7 @@ workflow backend_configuration {
       "max_retries": 0,
       "zones": "",
       "gpuType": select_first([gpuType, ""]),
-      "container_registry": select_first([container_registry]),
-      "hiphase_override_mem_gb": hiphase_override_mem_gb,
-      "merge_bam_stats_override_mem_gb": merge_bam_stats_override_mem_gb,
-      "pbmm2_align_wgs_override_mem_gb": pbmm2_align_wgs_override_mem_gb,
-      "pbstarphase_diplotype_override_mem_gb": pbstarphase_diplotype_override_mem_gb
+      "container_registry": select_first([container_registry])
     }
   }
 
@@ -139,11 +115,7 @@ workflow backend_configuration {
       "max_retries": 3,
       "zones": "",
       "gpuType": select_first([gpuType, ""]),
-      "container_registry": select_first([container_registry, default_container_registry]),
-      "hiphase_override_mem_gb": hiphase_override_mem_gb,
-      "merge_bam_stats_override_mem_gb": merge_bam_stats_override_mem_gb,
-      "pbmm2_align_wgs_override_mem_gb": pbmm2_align_wgs_override_mem_gb,
-      "pbstarphase_diplotype_override_mem_gb": pbstarphase_diplotype_override_mem_gb
+      "container_registry": select_first([container_registry, default_container_registry])
     }
   }
 

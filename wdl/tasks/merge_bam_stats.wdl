@@ -14,6 +14,9 @@ task merge_bam_stats {
     bam_stats: {
       name: "BAM Stats"
     }
+    merge_bam_stats_override_mem_gb: {
+      name: "Memory Allocation Override GB"
+    }
     runtime_attributes: {
       name: "Runtime attribute structure"
     }
@@ -40,12 +43,13 @@ task merge_bam_stats {
   input {
     String sample_id
     Array[File] bam_stats
+    Int? merge_bam_stats_override_mem_gb
 
     RuntimeAttributes runtime_attributes
   }
 
   Int threads   = 2
-  Int mem_gb    = select_first([runtime_attributes.merge_bam_stats_override_mem_gb, 4])
+  Int mem_gb    = select_first([merge_bam_stats_override_mem_gb, 4])
   Int disk_size = 10
 
   command <<<

@@ -29,6 +29,9 @@ task pbstarphase_diplotype {
     ref_index: {
       name: "Reference FASTA index"
     }
+    pbstarphase_diplotype_override_mem_gb: {
+      name: "Memory Allocation Override GB"
+    }
     runtime_attributes: {
       name: "Runtime attribute structure"
     }
@@ -52,11 +55,13 @@ task pbstarphase_diplotype {
     File ref_fasta
     File ref_index
 
+    Int? pbstarphase_diplotype_override_mem_gb
+
     RuntimeAttributes runtime_attributes
   }
 
   Int threads   = 2
-  Int mem_gb    = select_first([runtime_attributes.pbstarphase_diplotype_override_mem_gb, 16])
+  Int mem_gb    = select_first([pbstarphase_diplotype_override_mem_gb, 16])
   Int disk_size = ceil(size(phased_vcf, "GB") * 2 + size(aligned_bam, "GB") + size(ref_fasta, "GB") + 50)
 
   command <<<

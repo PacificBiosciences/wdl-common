@@ -38,6 +38,9 @@ task hiphase {
     ref_index: {
       name: "Reference index"
     }
+    hiphase_override_mem_gb: {
+      name: "Memory Allocation Override GB"
+    }
     runtime_attributes: {
       name: "Runtime attribute structure"
     }
@@ -91,11 +94,13 @@ task hiphase {
     File ref_fasta
     File ref_index
 
+    Int? hiphase_override_mem_gb
+
     RuntimeAttributes runtime_attributes
   }
 
   Int threads   = 16
-  Int mem_gb = select_first([runtime_attributes.hiphase_override_mem_gb, threads * 5])
+  Int mem_gb = select_first([hiphase_override_mem_gb, threads * 5])
   Int disk_size = ceil(size(vcfs, "GB") + size(ref_fasta, "GB") + size(aligned_bam, "GB") * 2 + 20)
 
   command <<<
