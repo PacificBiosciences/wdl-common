@@ -169,6 +169,21 @@ task sawfish_call {
     report_supporting_reads: {
       name: "Report supporting reads"
     }
+    copynum_bedgraph_names: {
+      name: "Copy number bedgraph output filenames"
+    }
+    depth_bw_names: {
+      name: "Depth bigWig output filenames"
+    }
+    gc_bias_corrected_depth_bw_names: {
+      name: "GC bias corrected depth bigWig output filenames"
+    }
+    maf_bw_names: {
+      name: "MAF bigWig output filenames"
+    }
+    copynum_summary_names: {
+      name: "Copy number summary JSON output filenames"
+    }
     runtime_attributes: {
       name: "Runtime attribute structure"
     }
@@ -212,6 +227,12 @@ task sawfish_call {
     String out_prefix
 
     Boolean report_supporting_reads = true
+
+    Array[String] copynum_bedgraph_names
+    Array[String] depth_bw_names
+    Array[String] gc_bias_corrected_depth_bw_names
+    Array[String] maf_bw_names
+    Array[String] copynum_summary_names
 
     RuntimeAttributes runtime_attributes
   }
@@ -263,23 +284,18 @@ task sawfish_call {
 
     # rename the output files to be more informative
     mv --verbose ~{out_prefix}/supporting_reads.json.gz ~{out_prefix}.supporting_reads.json.gz
-    touch copynum_bedgraph.list depth_bw.list maf_bw.list
+
     for sample_id in ~{sep=" " sample_ids}; do
       if [ "~{length(sample_ids)}" -gt 1 ]; then
         PREFIX="${sample_id}.~{out_prefix}"
       else
         PREFIX="~{out_prefix}"
       fi
-      mv --verbose ~{out_prefix}/samples/sample????_${sample_id}/copynum.bedgraph ${PREFIX}.copynum.bedgraph \
-      && echo ${PREFIX}.copynum.bedgraph >> copynum_bedgraph.list
-      mv --verbose ~{out_prefix}/samples/sample????_${sample_id}/depth.bw ${PREFIX}.depth.bw \
-      && echo ${PREFIX}.depth.bw >> depth_bw.list
-      mv --verbose ~{out_prefix}/samples/sample????_${sample_id}/gc_bias_corrected_depth.bw ${PREFIX}.gc_bias_corrected_depth.bw \
-      && echo ${PREFIX}.gc_bias_corrected_depth.bw >> gc_bias_corrected_depth.bw.list
-      mv --verbose ~{out_prefix}/samples/sample????_${sample_id}/maf.bw ${PREFIX}.maf.bw \
-      && echo ${PREFIX}.maf.bw >> maf_bw.list
-      mv --verbose ~{out_prefix}/samples/sample????_${sample_id}/copynum.summary.json ${PREFIX}.copynum.summary.json \
-      && echo ${PREFIX}.copynum.summary.json >> copynum_summary.list
+      mv --verbose ~{out_prefix}/samples/sample????_${sample_id}/copynum.bedgraph ${PREFIX}.copynum.bedgraph
+      mv --verbose ~{out_prefix}/samples/sample????_${sample_id}/depth.bw ${PREFIX}.depth.bw
+      mv --verbose ~{out_prefix}/samples/sample????_${sample_id}/gc_bias_corrected_depth.bw ${PREFIX}.gc_bias_corrected_depth.bw
+      mv --verbose ~{out_prefix}/samples/sample????_${sample_id}/maf.bw ${PREFIX}.maf.bw
+      mv --verbose ~{out_prefix}/samples/sample????_${sample_id}/copynum.summary.json ${PREFIX}.copynum.summary.json
     done
 
     # shellcheck disable=SC2086,SC2048
@@ -290,11 +306,11 @@ task sawfish_call {
     File  vcf                              = "~{out_prefix}.vcf.gz"
     File  vcf_index                        = "~{out_prefix}.vcf.gz.tbi"
     File? supporting_reads                 = "~{out_prefix}.supporting_reads.json.gz"
-    Array[File] copynum_bedgraph           = read_lines("copynum_bedgraph.list")
-    Array[File] depth_bw                   = read_lines("depth_bw.list")
-    Array[File] gc_bias_corrected_depth_bw = read_lines("gc_bias_corrected_depth.bw.list")
-    Array[File] maf_bw                     = read_lines("maf_bw.list")
-    Array[File] copynum_summary            = read_lines("copynum_summary.list")
+    Array[File] copynum_bedgraph           = copynum_bedgraph_names
+    Array[File] depth_bw                   = depth_bw_names
+    Array[File] gc_bias_corrected_depth_bw = gc_bias_corrected_depth_bw_names
+    Array[File] maf_bw                     = maf_bw_names
+    Array[File] copynum_summary            = copynum_summary_names
   }
 
   runtime {
