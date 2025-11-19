@@ -89,7 +89,7 @@ task pbstarphase_diplotype {
   }
 
   runtime {
-    docker: "~{runtime_attributes.container_registry}/pbstarphase@sha256:8bc2bc42b34bdb4813911072c9eb7155502e8ffec560c99f6c83d6edb9f3ed9f"
+    docker: "~{runtime_attributes.container_registry}/pbstarphase@sha256:b63d7abb718a11c29080cef19026d7c38b8d87df957969dd17b27b15c56de68b"
     cpu: threads
     memory: mem_gb + " GiB"
     disk: disk_size + " GB"
