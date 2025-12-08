@@ -160,7 +160,7 @@ task trgt {
   }
 
   runtime {
-    docker: "~{runtime_attributes.container_registry}/trgt@sha256:7511072d0f57396b1b99c7e0c08934db417138b6b4ce5d93c4974115faab2a0d"
+    docker: "~{runtime_attributes.container_registry}/trgt@sha256:169cb4307fc3c873ca6ffeed4977700aefc7b134e500a23fcfe681f5c8954a5e"
     cpu: threads
     memory: mem_gb + " GiB"
     disk: disk_size + " GB"
@@ -229,12 +229,9 @@ task trgt_merge {
     trgt merge \
       --vcf ~{sep=" " vcfs} \
       --genome ~{ref_fasta} \
-      --output ~{out_prefix}.vcf.gz
-
-    bcftools index \
-      ~{if threads > 1 then "--threads " + (threads - 1) else ""} \
-      --tbi \
-      ~{out_prefix}.vcf.gz
+      --output ~{out_prefix}.vcf.gz \
+      --write-index \
+      --no-index
   >>>
 
   output {
@@ -243,7 +240,7 @@ task trgt_merge {
   }
 
   runtime {
-    docker: "~{runtime_attributes.container_registry}/trgt@sha256:7511072d0f57396b1b99c7e0c08934db417138b6b4ce5d93c4974115faab2a0d"
+    docker: "~{runtime_attributes.container_registry}/trgt@sha256:169cb4307fc3c873ca6ffeed4977700aefc7b134e500a23fcfe681f5c8954a5e"
     cpu: threads
     memory: mem_gb + " GiB"
     disk: disk_size + " GB"
@@ -312,7 +309,7 @@ task coverage_dropouts {
   }
 
   runtime {
-    docker: "~{runtime_attributes.container_registry}/trgt@sha256:7511072d0f57396b1b99c7e0c08934db417138b6b4ce5d93c4974115faab2a0d"
+    docker: "~{runtime_attributes.container_registry}/trgt@sha256:169cb4307fc3c873ca6ffeed4977700aefc7b134e500a23fcfe681f5c8954a5e"
     cpu: threads
     memory: mem_gb + " GiB"
     disk: disk_size + " GB"
