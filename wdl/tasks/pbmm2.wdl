@@ -129,12 +129,16 @@ task pbmm2_align_wgs {
     fi
 
     current_bam="~{bam}" 
+    jasmine --version
     if [ "$kinetics" = true ] && [ "$base_modification" = false ]; then
       echo "Input ~{basename(bam)} contains consensus kinetics tags and no base modification tags.  Running Jasmine."
       jasmine \
         ~{bam} \
         ~{bam_basename}.kinetics_stripped.bam && \
       current_bam="~{bam_basename}.kinetics_stripped.bam"
+    else
+      echo "Input ~{basename(bam)} does not containg kinetics tags, skipping Jasmine"
+      echo ""
     fi
 
     pbmm2 --version
