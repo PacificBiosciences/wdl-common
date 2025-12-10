@@ -58,9 +58,10 @@ task pbmm2_align_wgs {
     RuntimeAttributes runtime_attributes
   }
 
+  String bam_basename = basename(bam, ".bam") + ".kinetics_stripped.bam"
   Int threads   = 24
   Int mem_gb    = select_first([pbmm2_align_wgs_override_mem_gb, ceil(threads * 4)])
-  Int disk_size = ceil(size(bam, "GB") * 3 + size(ref_fasta, "GB") + 70)
+  Int disk_size = ceil(size(bam, "GB") * 4 + size(ref_fasta, "GB") + 70)
 
   String movie = basename(bam, ".bam")
 
@@ -127,6 +128,19 @@ task pbmm2_align_wgs {
       fi
     fi
 
+    current_bam="~{bam}" 
+    jasmine --version
+    if [ "$kinetics" = true ] && [ "$base_modification" = false ]; then
+      echo "Input ~{basename(bam)} contains consensus kinetics tags and no base modification tags.  Running Jasmine."
+      jasmine \
+        ~{bam} \
+        ~{bam_basename}.kinetics_stripped.bam && \
+      current_bam="~{bam_basename}.kinetics_stripped.bam"
+    else
+      echo "Input ~{basename(bam)} does not containg kinetics tags, skipping Jasmine"
+      echo ""
+    fi
+
     pbmm2 --version
 
     pbmm2 align \
@@ -139,7 +153,7 @@ task pbmm2_align_wgs {
       ~{true='--strip' false='' strip_kinetics} \
       --unmapped \
       ~{ref_fasta} \
-      ~{bam} \
+      ${current_bam} \
       aligned.bam
 
     if [ "$haplotagged" = true ]; then
@@ -169,7 +183,7 @@ task pbmm2_align_wgs {
   }
 
   runtime {
-    docker: "~{runtime_attributes.container_registry}/pbmm2@sha256:b58eef0645dd9adca850c9b4811f289ddcd57f630596d9f524701bc787467f30"
+    docker: "~{runtime_attributes.container_registry}/pbmm2_jasmine:1.16.99_2.0.0"
     cpu: threads
     memory: mem_gb + " GB"
     disk: disk_size + " GB"
