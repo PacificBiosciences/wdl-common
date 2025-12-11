@@ -65,6 +65,11 @@ task pbmm2_align_wgs {
 
   String movie = basename(bam, ".bam")
 
+  # jasmine is not part of standard quay.io/pacbio container images
+  # a custom image was created using pbmm2 as the base and adding
+  # required tools (i.e. jasmine)
+  String pbmm2_jasmine_docker_image = (if (runtime_attributes.backend == "AWS-HealthOmics") then runtime_attributes.container_registry + "/" else "dnastack/") + "pbmm2_jasmine:1.16.99_2.0.0"
+
   command <<<
     set -euo pipefail
 
@@ -183,7 +188,7 @@ task pbmm2_align_wgs {
   }
 
   runtime {
-    docker: "~{runtime_attributes.container_registry}/pbmm2_jasmine:1.16.99_2.0.0"
+    docker: pbmm2_jasmine_docker_image
     cpu: threads
     memory: mem_gb + " GB"
     disk: disk_size + " GB"
