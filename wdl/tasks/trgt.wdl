@@ -54,6 +54,9 @@ task trgt {
     vcf_index: {
       name: "TRGT repeats VCF index"
     }
+    dropouts: {
+      name: "TRGT regions with coverage dropouts"
+    }
     stat_genotyped_count: {
       name: "Number of genotyped loci"
     }
@@ -138,6 +141,12 @@ task trgt {
       ~{if threads > 1 then "--threads " + (threads - 1) else ""} \
       ~{out_prefix}.trgt.spanning.sorted.bam
 
+    find_trgt_dropouts.py \
+      --sex ~{select_first([sex, "FEMALE"])} \
+      ~{trgt_bed} \
+      ~{out_prefix}.trgt.spanning.sorted.bam \
+      > ~{out_prefix}.trgt.dropouts.txt
+
     bcftools view --no-header --exclude-uncalled \
       ~{if threads > 1 then "--threads " + (threads - 1) else ""} \
       ~{out_prefix}.trgt.sorted.vcf.gz \
@@ -154,13 +163,14 @@ task trgt {
     File   bam_index            = "~{out_prefix}.trgt.spanning.sorted.bam.bai"
     File   vcf                  = "~{out_prefix}.trgt.sorted.vcf.gz"
     File   vcf_index            = "~{out_prefix}.trgt.sorted.vcf.gz.tbi"
+    File   dropouts             = "~{out_prefix}.trgt.dropouts.txt"
     String stat_genotyped_count = read_string("genotyped_count.txt")
     String stat_uncalled_count  = read_string("uncalled_count.txt")
-    Array[String] msg           = read_lines("messages.txt")
+    Array [String] msg          = read_lines("messages.txt")
   }
 
   runtime {
-    docker: "~{runtime_attributes.container_registry}/trgt@sha256:169cb4307fc3c873ca6ffeed4977700aefc7b134e500a23fcfe681f5c8954a5e"
+    docker: "~{runtime_attributes.container_registry}/trgt@sha256:8485428ef5ee75105c3c0d00a1d8f64a952d2775b0fd41df2d3346f4635b5f6d"
     cpu: threads
     memory: mem_gb + " GiB"
     disk: disk_size + " GB"
@@ -240,7 +250,7 @@ task trgt_merge {
   }
 
   runtime {
-    docker: "~{runtime_attributes.container_registry}/trgt@sha256:169cb4307fc3c873ca6ffeed4977700aefc7b134e500a23fcfe681f5c8954a5e"
+    docker: "~{runtime_attributes.container_registry}/trgt@sha256:8485428ef5ee75105c3c0d00a1d8f64a952d2775b0fd41df2d3346f4635b5f6d"
     cpu: threads
     memory: mem_gb + " GiB"
     disk: disk_size + " GB"
@@ -248,75 +258,6 @@ task trgt_merge {
     preemptible: runtime_attributes.preemptible_tries
     maxRetries: runtime_attributes.max_retries
     awsBatchRetryAttempts: runtime_attributes.max_retries  # !UnknownRuntimeKey
-    zones: runtime_attributes.zones
-    cpuPlatform: runtime_attributes.cpuPlatform
-  }
-}
-
-task coverage_dropouts {
-  meta {
-    description: "Get coverage dropouts from aligned reads."
-  }
-
-  parameter_meta {
-    aligned_bam: {
-      name: "Aligned BAM"
-    }
-    aligned_bam_index: {
-      name: "Aligned BAM index"
-    }
-    trgt_bed: {
-      name: "TRGT tandem repeat catalog BED"
-    }
-    out_prefix: {
-      name: "Output prefix"
-    }
-    runtime_attributes: {
-      name: "Runtime attribute structure"
-    }
-    dropouts: {
-      name: "TRGT regions with coverage dropouts"
-    }
-  }
-
-  input {
-    File aligned_bam
-    File aligned_bam_index
-
-    File trgt_bed
-
-    String out_prefix
-
-    RuntimeAttributes runtime_attributes
-  }
-
-  Int threads   = 2
-  Int mem_gb    = 4
-  Int disk_size = ceil((size(aligned_bam, "GB")) + 20)
-
-  command <<<
-    set -eu
-
-    # Get coverage dropouts
-    check_trgt_coverage.py \
-      <(zcat ~{trgt_bed} || cat ~{trgt_bed}) \
-      ~{aligned_bam} \
-    > ~{out_prefix}.trgt.dropouts.txt
-  >>>
-
-  output {
-    File dropouts = "~{out_prefix}.trgt.dropouts.txt"
-  }
-
-  runtime {
-    docker: "~{runtime_attributes.container_registry}/trgt@sha256:169cb4307fc3c873ca6ffeed4977700aefc7b134e500a23fcfe681f5c8954a5e"
-    cpu: threads
-    memory: mem_gb + " GiB"
-    disk: disk_size + " GB"
-    disks: "local-disk " + disk_size + " HDD"
-    preemptible: runtime_attributes.preemptible_tries
-    maxRetries: runtime_attributes.max_retries
-    awsBatchRetryAttempts: runtime_attributes.max_retries
     zones: runtime_attributes.zones
     cpuPlatform: runtime_attributes.cpuPlatform
   }
