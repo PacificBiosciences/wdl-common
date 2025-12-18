@@ -30,6 +30,12 @@ task trgt {
     trgt_bed: {
       name: "TRGT tandem repeat catalog BED"
     }
+    expected_male_bed: {
+      name: "Expected ploidy BED for sample with XY karyotype"
+    }
+    expected_female_bed: {
+      name: "Expected ploidy BED for sample with XX karyotype"
+    }
     out_prefix: {
       name: "Output prefix"
     }
@@ -80,6 +86,9 @@ task trgt {
 
     File trgt_bed
 
+    File expected_male_bed
+    File expected_female_bed
+
     String out_prefix
 
     Int max_depth = 50
@@ -94,7 +103,9 @@ task trgt {
 
   Int samtools_sort_threads = 8
 
-  String karyotype = if select_first([sex, "FEMALE"]) == "MALE" then "XY" else "XX"
+  String karyotype    = if select_first([sex, "FEMALE"]) == "MALE" then "XY" else "XX"
+  File   expected_bed = if select_first([sex, "FEMALE"]) == "MALE" then expected_male_bed else expected_female_bed
+
 
   command <<<
     set -euo pipefail
@@ -142,7 +153,8 @@ task trgt {
       ~{out_prefix}.trgt.spanning.sorted.bam
 
     find_trgt_dropouts.py \
-      --sex ~{select_first([sex, "FEMALE"])} \
+      --ploidybed ~{expected_bed} \
+      --coverage 2 \
       ~{trgt_bed} \
       ~{out_prefix}.trgt.spanning.sorted.bam \
       > ~{out_prefix}.trgt.dropouts.txt
@@ -170,7 +182,7 @@ task trgt {
   }
 
   runtime {
-    docker: "~{runtime_attributes.container_registry}/trgt@sha256:8485428ef5ee75105c3c0d00a1d8f64a952d2775b0fd41df2d3346f4635b5f6d"
+    docker: "~{runtime_attributes.container_registry}/trgt@sha256:be0ed7c173d221bd84e360b2b056e2abbecadd07ed86ffd4883a5cecca7a1e57"
     cpu: threads
     memory: mem_gb + " GiB"
     disk: disk_size + " GB"
@@ -250,7 +262,7 @@ task trgt_merge {
   }
 
   runtime {
-    docker: "~{runtime_attributes.container_registry}/trgt@sha256:8485428ef5ee75105c3c0d00a1d8f64a952d2775b0fd41df2d3346f4635b5f6d"
+    docker: "~{runtime_attributes.container_registry}/trgt@sha256:be0ed7c173d221bd84e360b2b056e2abbecadd07ed86ffd4883a5cecca7a1e57"
     cpu: threads
     memory: mem_gb + " GiB"
     disk: disk_size + " GB"
