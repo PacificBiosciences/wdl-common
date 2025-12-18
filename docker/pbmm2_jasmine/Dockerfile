@@ -12,5 +12,8 @@ RUN apt-get -qq update && \
         wget
 
 ARG JASMINE_VERSION
-RUN wget https://github.com/PacificBiosciences/jasmine/releases/download/v${JASMINE_VERSION}/jasmine -O /usr/local/bin/jasmine \
-    && chmod +x /usr/local/bin/jasmine
+RUN wget https://github.com/PacificBiosciences/jasmine/releases/download/v${JASMINE_VERSION}/jasmine.tar.xz && \
+    tar xf jasmine.tar.xz -C /usr/local && \
+    chown root:root /usr/local/bin/jasmine && \
+    chown root:root /usr/local/lib/libonnxruntime.so.* && \
+    chmod +x /usr/local/bin/jasmine

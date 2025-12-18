@@ -68,7 +68,7 @@ task pbmm2_align_wgs {
   # jasmine is not part of standard quay.io/pacbio container images
   # a custom image was created using pbmm2 as the base and adding
   # required tools (i.e. jasmine)
-  String pbmm2_jasmine_docker_image = (if (runtime_attributes.backend == "AWS-HealthOmics") then runtime_attributes.container_registry + "/" else "dnastack/") + "pbmm2_jasmine:1.16.99_2.0.0"
+  String pbmm2_jasmine_docker_image = (if (runtime_attributes.backend == "AWS-HealthOmics") then runtime_attributes.container_registry + "/" else "dnastack/") + "pbmm2_jasmine:1.16.99_2.4.0"
 
   command <<<
     set -euo pipefail
